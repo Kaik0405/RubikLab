@@ -1,36 +1,47 @@
 :- use_module(library(plunit)).
 :- use_module('../prolog/cubo').
 
-:- begin_tests(cubo).
+/** <module> Pruebas de las operaciones del cubo.
 
-test(u_cambia_el_estado) :-
-    resuelto(S), aplicar(u, S, S1), S1 \== S.
+Verifica los movimientos básicos, sus repeticiones, las secuencias
+conocidas y el comportamiento ante movimientos desconocidos.
+*/
 
-test(u4_es_identidad) :-
-    resuelto(S), aplicar_seq([u,u,u,u], S, S1), S1 == S.
+:- begin_tests(cube).
 
-test(r4_es_identidad) :-
-    resuelto(S), aplicar_seq([r,r,r,r], S, S1), S1 == S.
+% Un giro de cuarto de vuelta debe modificar el estado resuelto.
+test(u_changes_state) :-
+    solved(S), apply(u, S, S1), S1 \== S.
 
-test(u2x2_es_identidad) :-
-    resuelto(S), aplicar_seq([u2,u2], S, S1), S1 == S.
+% Cuatro giros iguales deben devolver el cubo a su estado inicial.
+test(u4_is_identity) :-
+    solved(S), apply_sequence([u,u,u,u], S, S1), S1 == S.
 
-test(r2x2_es_identidad) :-
-    resuelto(S), aplicar_seq([r2,r2], S, S1), S1 == S.
+test(r4_is_identity) :-
+    solved(S), apply_sequence([r,r,r,r], S, S1), S1 == S.
 
-test(r_cambia_el_estado) :-
-    resuelto(S), aplicar(r, S, S1), S1 \== S.
+% Dos giros de media vuelta equivalen a la identidad.
+test(u2x2_is_identity) :-
+    solved(S), apply_sequence([u2,u2], S, S1), S1 == S.
 
-test(movimiento_desconocido_falla, [fail]) :-
-    resuelto(S),
-    aplicar(otro_movimiento, S, _).
+test(r2x2_is_identity) :-
+    solved(S), apply_sequence([r2,r2], S, S1), S1 == S.
 
-test(sexymove_x6_es_identidad) :-
-    resuelto(S),
-    length(Veces, 6),
-    maplist(=([r,u,ri,ui]), Veces),
-    append(Veces, Seq),
-    aplicar_seq(Seq, S, S1),
+test(r_changes_state) :-
+    solved(S), apply(r, S, S1), S1 \== S.
+
+% Un movimiento que no existe debe hacer que la prueba falle.
+test(unknown_move_fails, [fail]) :-
+    solved(S),
+    apply(unknown_move, S, _).
+
+% La secuencia sexy repetida seis veces es una identidad.
+test(sexy_move_x6_is_identity) :-
+    solved(S),
+    length(Sequences, 6),
+    maplist(=([r,u,ri,ui]), Sequences),
+    append(Sequences, Moves),
+    apply_sequence(Moves, S, S1),
     S1 == S.
 
-:- end_tests(cubo).
+:- end_tests(cube).
