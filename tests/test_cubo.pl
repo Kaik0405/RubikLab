@@ -1,9 +1,15 @@
+:- use_module(library(plunit)).
+:- use_module('../prolog/cubo').
+
 :- begin_tests(cubo).
 
-:- use_module('../prolog/cubo.pl').
-
-% TODO: reemplazar por la comprobación de identidad cuando exista la lógica del cubo.
-test(u_aplicada_cuatro_veces_es_la_identidad, [fail]) :-
-    fail.
+test(u_cambia_el_estado) :-
+    resuelto(S), aplicar(u, S, S1), S1 \== S.
+test(u4_es_identidad) :-
+    resuelto(S), aplicar_seq([u,u,u,u], S, S1), S1 == S.
+test(r4_es_identidad) :-
+    resuelto(S), aplicar_seq([r,r,r,r], S, S1), S1 == S.
+test(r_cambia_el_estado) :-
+    resuelto(S), aplicar(r, S, S1), S1 \== S.
 
 :- end_tests(cubo).
