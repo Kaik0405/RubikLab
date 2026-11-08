@@ -14,9 +14,25 @@ mov_base(r, estado([4,1,2,0,7,5,6,3], [2,0,0,1,1,0,0,2],
                    [8,1,2,3,11,5,6,7,4,9,10,0],
                    [0,0,0,0,0,0,0,0,0,0,0,0])).
 
+mov_base(ui, estado([1,2,3,0,4,5,6,7], [0,0,0,0,0,0,0,0],
+                    [1,2,3,0,4,5,6,7,8,9,10,11],
+                    [0,0,0,0,0,0,0,0,0,0,0,0])).
+
+mov_base(ri, estado([3,1,2,7,0,5,6,4], [2,0,0,1,1,0,0,2],
+                    [11,1,2,3,8,5,6,7,0,9,10,4],
+                    [0,0,0,0,0,0,0,0,0,0,0,0])).
+
+mov_base(u2, estado([2,3,0,1,4,5,6,7], [0,0,0,0,0,0,0,0],
+                    [2,3,0,1,4,5,6,7,8,9,10,11],
+                    [0,0,0,0,0,0,0,0,0,0,0,0])).
+
+mov_base(r2, estado([7,1,2,4,3,5,6,0], [0,0,0,0,0,0,0,0],
+                    [4,1,2,3,0,5,6,7,11,9,10,8],
+                    [0,0,0,0,0,0,0,0,0,0,0,0])).
+
 % aplicar(+Mov, +E0, -E1): nuevo[i] = viejo[M.perm[i]], orientacion = suma mod
 aplicar(M, estado(CP,CO,EP,EO), estado(CP2,CO2,EP2,EO2)) :-
-    mov_base(M, estado(MCP,MCO,MEP,MEO)),
+    once(mov_base(M, estado(MCP,MCO,MEP,MEO))),
     maplist(elem(CP), MCP, CP2),
     maplist(elem(EP), MEP, EP2),
     maplist(ori(CO,3), MCP, MCO, CO2),
