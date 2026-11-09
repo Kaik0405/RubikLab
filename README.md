@@ -138,7 +138,7 @@ swipl --version
 ### Installation
 
 ```bash
-git clone https://github.com/<your-username>/rubiklab.git
+git clone https://github.com/Kaik0405/rubiklab.git
 cd rubiklab
 ```
 
