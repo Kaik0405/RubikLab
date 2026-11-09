@@ -134,7 +134,7 @@ Check your installation:
 ```bash
 swipl --version
 ```
-
+ 
 ### Installation
 
 ```bash
