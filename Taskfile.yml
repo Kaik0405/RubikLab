@@ -12,12 +12,12 @@ tasks:
   test:
     desc: Ejecutar todas las pruebas de Prolog
     cmds:
-      - '{{.SWIPL}} -g "set_test_options([format(log)]),run_tests" -t halt tests/test_cube.pl'
+      - '{{.SWIPL}} -g "set_test_options([format(log)]),run_tests" -t halt tests/test_moves.pl'
 
   test:verbose:
     desc: Ejecutar todas las pruebas de Prolog con salida detallada
     cmds:
-      - '{{.SWIPL}} -s tests/test_cube.pl -g "run_tests,halt"'
+      - '{{.SWIPL}} -s tests/test_moves.pl -g "run_tests,halt"'
 
   check:
     desc: Cargar el módulo del cubo y verificar su sintaxis

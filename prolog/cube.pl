@@ -1,4 +1,4 @@
-:- module(cube, [solved/1, base_move/2, apply/3, apply_sequence/3]).
+:- module(cube, [solved/1, base_move/2, apply/3, apply_sequence/3, move/1]).
 
 /** <module> Estado y operaciones del cubo de Rubik.
 
@@ -76,6 +76,12 @@ base_move(bi, state([0,1,6,2,4,5,7,3], [0,0,1,2,0,0,2,1],
 base_move(b2, state([0,1,7,6,4,5,3,2], [0,0,0,0,0,0,0,0],
                     [0,1,2,7,4,5,6,3,8,9,11,10],
                     [0,0,0,0,0,0,0,0,0,0,0,0])).
+
+%% move(?Move) is nondet.
+%
+% Move es uno de los movimientos definidos en base_move/2. Es la unica
+% fuente de verdad: si agregas un movimiento, aparece aqui solo.
+move(Move) :- base_move(Move, _).                
 
 %% apply(+Move, +InitialState, -FinalState) is semidet.
 %
