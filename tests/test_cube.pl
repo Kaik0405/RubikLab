@@ -1,5 +1,5 @@
 :- use_module(library(plunit)).
-:- use_module('../prolog/cubo').
+:- use_module('../prolog/cube').
 
 /** <module> Pruebas de las operaciones del cubo.
 
@@ -43,5 +43,25 @@ test(sexy_move_x6_is_identity) :-
     append(Sequences, Moves),
     apply_sequence(Moves, S, S1),
     S1 == S.
+
+repeat_seq(0, _, S, S) :- !.
+repeat_seq(N, Seq, S0, S) :-
+    apply_sequence(Seq, S0, S1), N1 is N - 1, repeat_seq(N1, Seq, S1, S).
+
+test(cuatro_giros_identidad, [forall(member(M,[u,r,f,d,l,b]))]) :-
+    solved(S), repeat_seq(4, [M], S, S1), S1 == S.
+
+test(inverso_deshace, [forall(member(M-I,[u-ui,r-ri,f-fi,d-di,l-li,b-bi]))]) :-
+    solved(S), apply_sequence([M,I], S, S1), S1 == S.
+
+test(doble_es_dos_veces, [forall(member(M-D,[u-u2,r-r2,f-f2,d-d2,l-l2,b-b2]))]) :-
+    solved(S), apply_sequence([M,M], S, A), apply(D, S, B), A == B.
+
+% Prueba fuerte: A B tiene orden 105 (no vuelve antes de 105 repeticiones)
+test(orden_105, [forall(member([A,B],[[r,u],[f,r],[l,f],[b,d],[d,l],[b,r]]))]) :-
+    solved(S),
+    repeat_seq(105, [A,B], S, S1), S1 == S,
+    forall(member(K,[15,21,35]),
+           ( repeat_seq(K, [A,B], S, Sk), Sk \== S )).
 
 :- end_tests(cube).

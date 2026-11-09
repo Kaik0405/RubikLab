@@ -1,0 +1,35 @@
+version: '3'
+
+vars:
+  SWIPL: swipl
+
+tasks:
+  default:
+    desc: Ejecutar la suite de pruebas
+    cmds:
+      - task: test
+
+  test:
+    desc: Ejecutar todas las pruebas de Prolog
+    cmds:
+      - '{{.SWIPL}} -g "set_test_options([format(log)]),run_tests" -t halt tests/test_cube.pl'
+
+  test:verbose:
+    desc: Ejecutar todas las pruebas de Prolog con salida detallada
+    cmds:
+      - '{{.SWIPL}} -s tests/test_cube.pl -g "run_tests,halt"'
+
+  check:
+    desc: Cargar el módulo del cubo y verificar su sintaxis
+    cmds:
+      - '{{.SWIPL}} -q -g "[prolog/cube],halt"'
+
+  server:
+    desc: Iniciar el servidor de Prolog
+    cmds:
+      - '{{.SWIPL}} -s prolog/server.pl'
+
+  benchmark:
+    desc: Ejecutar el benchmark de Prolog
+    cmds:
+      - '{{.SWIPL}} -s prolog/benchmark.pl'

@@ -12,6 +12,6 @@ Proyecto de Cubo de Rubik 3x3x3 en SWI-Prolog con una interfaz web ligera.
 ## Comandos
 
 ```sh
-swipl -s prolog/servidor.pl
-swipl -g run_tests -t halt tests/test_cubo.pl
+swipl -s prolog/server.pl
+swipl -g run_tests -t halt tests/test_cube.pl
 ```
