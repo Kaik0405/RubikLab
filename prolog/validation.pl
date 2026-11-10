@@ -15,13 +15,13 @@
 % Comprueba que la suma de las orientaciones de las esquinas sea múltiplo de 3.
 legal_corner_orientation(CO) :-
     sum_list(CO, Sum),
-    0 is Sum mod 3.
+    Sum mod 3 =:= 0.
 
 %% legal_edge_orientation(+EO) is semidet.
 % Comprueba que la suma de las orientaciones de las aristas sea múltiplo de 2.
 legal_edge_orientation(EO) :-
     sum_list(EO, Sum),
-    0 is Sum mod 2.
+    Sum mod 2 =:= 0.
 
 %% count_inversions(+List, -Count) is det.
 % Cuenta el número de inversiones en una lista de permutación.
@@ -57,7 +57,7 @@ legal_elements(CP, EP) :-
 
 %% legal(+State) is semidet.
 % Un estado es completamente legal si cumple las orientaciones, paridad e integridad.
-legal(estado(CP, CO, EP, EO)) :-
+legal(state(CP, CO, EP, EO)) :-
     legal_elements(CP, EP),
     legal_corner_orientation(CO),
     legal_edge_orientation(EO),
@@ -65,15 +65,15 @@ legal(estado(CP, CO, EP, EO)) :-
 
 %% illegal_reason(+State, -Reason) is semidet.
 % Diagnóstica la primera razón exacta por la cual un estado no es físico ni legal.
-illegal_reason(estado(CP, _CO, EP, _EO), piezas_invalidas_o_duplicadas) :-
+illegal_reason(state(CP, _CO, EP, _EO), piezas_invalidas_o_duplicadas) :-
     \+ legal_elements(CP, EP),
     !.
-illegal_reason(estado(_CP, CO, _EP, _EO), orientacion_esquinas_invalida) :-
+illegal_reason(state(_CP, CO, _EP, _EO), orientacion_esquinas_invalida) :-
     \+ legal_corner_orientation(CO),
     !.
-illegal_reason(estado(_CP, _CO, _EP, EO), orientacion_aristas_invalida) :-
+illegal_reason(state(_CP, _CO, _EP, EO), orientacion_aristas_invalida) :-
     \+ legal_edge_orientation(EO),
     !.
-illegal_reason(estado(CP, _CO, EP, _EO), paridad_permutacion_invalida) :-
+illegal_reason(state(CP, _CO, EP, _EO), paridad_permutacion_invalida) :-
     \+ legal_parity(CP, EP),
     !.
