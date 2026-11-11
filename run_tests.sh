@@ -15,12 +15,15 @@ case "${1:-all}" in
   facelets)
     swipl -g 'set_test_options([format(log)]),run_tests' -t halt tests/test_facelets.pl
     ;;
+  search)
+    swipl -g 'set_test_options([format(log)]),run_tests' -t halt tests/test_search.pl
+    ;;
   all)
     swipl -g 'set_test_options([format(log)]),run_tests' -t halt \
-      tests/test_cube.pl tests/test_moves.pl tests/test_validation.pl tests/test_facelets.pl
+      tests/test_cube.pl tests/test_moves.pl tests/test_validation.pl tests/test_facelets.pl tests/test_search.pl
     ;;
   *)
-    echo "Uso: $0 [all|cube|moves|validation|facelets]" >&2
+    echo "Uso: $0 [all|cube|moves|validation|facelets|search]" >&2
     exit 1
     ;;
 esac
