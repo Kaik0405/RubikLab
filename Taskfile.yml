@@ -12,12 +12,12 @@ tasks:
   test:
     desc: Ejecutar todas las suites de pruebas de Prolog
     cmds:
-      - '{{.SWIPL}} -g "set_test_options([format(log)]),run_tests" -t halt tests/test_cube.pl tests/test_moves.pl tests/test_validation.pl'
+      - '{{.SWIPL}} -g "set_test_options([format(log)]),run_tests" -t halt tests/test_cube.pl tests/test_moves.pl tests/test_validation.pl tests/test_facelets.pl'
 
   test:verbose:
     desc: Ejecutar todas las suites de pruebas de Prolog con salida detallada
     cmds:
-      - '{{.SWIPL}} -s tests/test_cube.pl -s tests/test_moves.pl -s tests/test_validation.pl -g "run_tests,halt"'
+      - '{{.SWIPL}} -s tests/test_cube.pl -s tests/test_moves.pl -s tests/test_validation.pl -s tests/test_facelets.pl -g "run_tests,halt"'
 
   test:cube:
     desc: Ejecutar las pruebas del cubo
@@ -34,6 +34,11 @@ tasks:
     cmds:
       - '{{.SWIPL}} -g "set_test_options([format(log)]),run_tests" -t halt tests/test_validation.pl'
 
+  test:facelets:
+    desc: Ejecutar las pruebas de conversión a facelets
+    cmds:
+      - '{{.SWIPL}} -g "set_test_options([format(log)]),run_tests" -t halt tests/test_facelets.pl'
+
   check:
     desc: Cargar el módulo del cubo y verificar su sintaxis
     cmds:
@@ -42,7 +47,7 @@ tasks:
   server:
     desc: Iniciar el servidor de Prolog
     cmds:
-      - '{{.SWIPL}} -q -g "use_module(prolog/server),start,thread_get_message(_)"'
+      - '{{.SWIPL}} -q -s prolog/server.pl -g "server:start,thread_get_message(_)"'
 
   benchmark:
     desc: Ejecutar el benchmark de Prolog

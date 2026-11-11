@@ -1,10 +1,14 @@
 :- module(server, [start/0, start/1]).
 
-:- use_module(library(http/thread_httpd)).
-:- use_module(library(http/http_dispatch)).
-:- use_module(library(http/http_json)).
-:- use_module(library(http/http_parameters)).
-:- use_module(library(http/http_files)).
+:- use_module(library(http/thread_httpd), [http_server/2]).
+:- use_module(library(http/http_dispatch), [
+    http_dispatch/1,
+    http_handler/3
+]).
+:- use_module(library(http/http_json), [reply_json_dict/1]).
+:- use_module(library(http/http_parameters), [http_parameters/2]).
+:- use_module(library(http/http_files), [http_reply_from_files/3]).
+:- use_module(library(apply), [maplist/2]).
 :- use_module(cube, [move/1, solved/1, apply_sequence/3]).
 :- use_module(moves, [random_scramble/2]).
 :- use_module(facelets, [state_to_facelets/2, facelets_to_state/2]).

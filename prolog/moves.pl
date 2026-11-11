@@ -1,13 +1,15 @@
 :- module(moves, [face_of/2, inverse/2, inverse_sequence/2, random_scramble/2]).
-:- use_module(library(random)).
+:- use_module(library(random), [random_member/2]).
 :- use_module(cube, [move/1]).
 
-%% face_of(+Move, -Face): la cara es la primera letra del nombre
+%% face_of(+Move, -Face) is det.
+% Obtiene la cara asociada al primer carácter del movimiento.
 face_of(Move, Face) :-
     atom_chars(Move, [C|_]),
     atom_chars(Face, [C]).
 
-%% inverse(+Move, -Inverse)
+%% inverse(+Move, -Inverse) is det.
+% Calcula el movimiento inverso.
 inverse(Move, Inverse) :-
     atom_chars(Move, Cs),
     inverse_chars(Cs, Is),
@@ -17,12 +19,14 @@ inverse_chars([F],     [F,i])  :- !.
 inverse_chars([F,i],   [F])    :- !.
 inverse_chars([F,'2'], [F,'2']).
 
-%% inverse_sequence(+Moves, -Inverse): invierte el orden y cada movimiento
+%% inverse_sequence(+Moves, -Inverse) is det.
+% Invierte el orden de una secuencia y cada uno de sus movimientos.
 inverse_sequence(Moves, Inverse) :-
     reverse(Moves, Rev),
     maplist(inverse, Rev, Inverse).
 
-%% random_scramble(+N, -Moves): N movimientos, sin repetir cara seguida
+%% random_scramble(+N, -Moves) is det.
+% Genera N movimientos sin repetir la misma cara consecutivamente.
 random_scramble(N, Moves) :- scramble(N, none, Moves).
 
 scramble(0, _, []) :- !.

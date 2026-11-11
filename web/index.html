@@ -3,12 +3,35 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>RubikLog</title>
+  <title>Visor 2D del cubo</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>RubikLog</h1>
-  <div id="cubo"></div>
+  <main class="app">
+    <header class="header">
+      <div>
+        <p class="eyebrow">RubikLab</p>
+        <h1>Visor 2D del cubo</h1>
+      </div>
+      <p id="status" class="status" aria-live="polite">Cargando...</p>
+    </header>
+
+    <section class="cube-panel" aria-label="Cubo de Rubik desplegado">
+      <div id="cube" class="cube-net"></div>
+    </section>
+
+    <section class="controls" aria-label="Controles del cubo">
+      <button id="scrambleButton" type="button">Scramble</button>
+      <button id="resetButton" type="button" class="secondary">Reset</button>
+      <span id="doubleIndicator" class="double-indicator" aria-live="polite"></span>
+    </section>
+
+    <section class="moves-panel">
+      <h2>Movimientos</h2>
+      <p id="moves" class="moves-list">Resuelto</p>
+      <p class="help">U R F D L B giran · Shift invierte · 2 aplica doble giro</p>
+    </section>
+  </main>
   <script src="app.js"></script>
 </body>
 </html>
