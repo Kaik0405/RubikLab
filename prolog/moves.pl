@@ -3,10 +3,26 @@
 :- use_module(cube, [move/1]).
 
 %% face_of(+Move, -Face) is det.
-% Obtiene la cara asociada al primer carácter del movimiento.
-face_of(Move, Face) :-
-    atom_chars(Move, [C|_]),
-    atom_chars(Face, [C]).
+% Estos hechos evitan descomponer átomos en cada llamada; se usan millones
+% de veces durante la búsqueda.
+face_of(u, u).
+face_of(ui, u).
+face_of(u2, u).
+face_of(r, r).
+face_of(ri, r).
+face_of(r2, r).
+face_of(f, f).
+face_of(fi, f).
+face_of(f2, f).
+face_of(d, d).
+face_of(di, d).
+face_of(d2, d).
+face_of(l, l).
+face_of(li, l).
+face_of(l2, l).
+face_of(b, b).
+face_of(bi, b).
+face_of(b2, b).
 
 %% inverse(+Move, -Inverse) is det.
 % Calcula el movimiento inverso.

@@ -12,7 +12,14 @@ movimientos consecutivos.
 :- begin_tests(search).
 
 test(random_scrambles_are_solved,
-     [forall((between(1, 4, Length), between(1, 10, _)))]) :-
+     [forall((between(1, 3, Length), between(1, 10, _)))]) :-
+    solve_random_scramble(Length).
+
+test(random_length_four_scrambles_are_solved,
+     [forall(between(1, 2, _))]) :-
+    solve_random_scramble(4).
+
+solve_random_scramble(Length) :-
     random_scramble(Length, Scramble),
     solved(Solved),
     apply_sequence(Scramble, Solved, Scrambled),

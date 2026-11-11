@@ -10,6 +10,11 @@ test(inverse_is_a_move, [forall(move(M))]) :-
 test(inverse_is_involution, [forall(move(M))]) :-
     inverse(M, I), inverse(I, M2), M2 == M.
 
+test(face_of_matches_first_character, [forall(move(M))]) :-
+    face_of(M, Face),
+    atom_chars(M, [FirstCharacter|_]),
+    atom_chars(Face, [FirstCharacter]).
+
 test(inverse_sequence) :-
     inverse_sequence([r,u,ri,ui], X), X == [u,r,ui,ri].
 

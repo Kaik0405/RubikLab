@@ -33,7 +33,8 @@ zero_heuristic(_, 0).
 % Repite la búsqueda hasta encontrar una solución o superar la profundidad máxima.
 ida_search(State, IsGoal, Heuristic, Moves, MaxDepth, Threshold, Path) :-
     Threshold =< MaxDepth,
-    nb_setval(next_threshold, MaxDepth + 1),
+    Next is MaxDepth + 1,
+    nb_setval(next_threshold, Next),
     depth_first_search(State, IsGoal, Heuristic, Moves, 0,
                        MaxDepth, Threshold, none, Path),
     !.
