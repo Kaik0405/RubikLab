@@ -148,6 +148,12 @@ cd rubiklab
 bash run_tests.sh
 ```
 
+Start the HTTP server:
+
+```bash
+swipl -q -g "use_module(prolog/server),start,thread_get_message(_)"
+```
+
 ## Usage
 
 Load the modules in the SWI-Prolog interpreter:

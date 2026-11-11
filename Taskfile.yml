@@ -42,7 +42,7 @@ tasks:
   server:
     desc: Iniciar el servidor de Prolog
     cmds:
-      - '{{.SWIPL}} -s prolog/server.pl'
+      - '{{.SWIPL}} -q -g "use_module(prolog/server),start,thread_get_message(_)"'
 
   benchmark:
     desc: Ejecutar el benchmark de Prolog
