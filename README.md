@@ -4,12 +4,12 @@
 
 ![SWI-Prolog](https://img.shields.io/badge/SWI--Prolog-9.x-blue)
 ![Paradigm](https://img.shields.io/badge/paradigm-declarative-success)
-![Status](https://img.shields.io/badge/status-in%20development-orange)
+![Status](https://img.shields.io/badge/status-functional-success)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
-RubikLab models the Rubik's Cube as a purely declarative knowledge base, validates whether a configuration is physically reachable, and solves it with **two different strategies** whose performance can be compared side by side: a Thistlethwaite-style phased solver driven by IDA* and a CFOP solver driven by pattern recognition through unification.
+RubikLab models the Rubik's Cube as a declarative knowledge base, validates whether a configuration is physically reachable, and solves it with a complete four-phase Thistlethwaite-style solver driven by IDA* and pruning tables.
 
-All cube logic lives in Prolog. The web interface is a thin layer that renders the cube and calls the API.
+All cube logic lives in Prolog. The web interface is a framework-free client that renders the cube, captures moves, requests solutions and animates the result through the HTTP API.
 
 ---
 
@@ -21,6 +21,7 @@ All cube logic lives in Prolog. The web interface is a thin layer that renders t
 - [Cube Representation](#cube-representation)
 - [Getting Started](#getting-started)
 - [Usage](#usage)
+- [HTTP API](#http-api)
 - [Testing Strategy](#testing-strategy)
 - [Roadmap](#roadmap)
 - [Tech Stack](#tech-stack)
@@ -36,15 +37,14 @@ All cube logic lives in Prolog. The web interface is a thin layer that renders t
 |---|---|---|
 | Cube model | Cubie-based state with permutation and orientation | Done |
 | 18 moves | Quarter, inverse and half turns of the six faces | Done |
-| Move utilities | Inverse of a move or sequence, random scrambles | In progress |
+| Move utilities | Inverse of a move or sequence, random scrambles | Done |
 | State validation | Detects unreachable states and explains why | Done |
 | Solver A | Four-phase Thistlethwaite approach with IDA* and pruning tables | Done |
 | Solver B | CFOP: cross and F2L via IDA*, OLL/PLL via a verified algorithm catalog | Planned |
-| Explainer | Reports which stage and rule produced each part of a solution | Planned |
-| Benchmark | Compares both solvers by move count, time and nodes explored | Planned |
-| Web UI | 2D cube, keyboard controls and solve panel | Done |
+| Solver response | Reports phases, moves, nodes and execution time | Done |
+| Web UI | 2D cube, keyboard controls, scramble and animated solving | Done |
 
-Solver A measured **31.65 moves on average** over 20 scrambles of 25 moves,
+The solver measured **31.65 moves on average** over 20 scrambles of 25 moves,
 with a minimum of 27 and a maximum of 36.
 
 ## Design Principles
@@ -67,11 +67,7 @@ rubiklab/
 │   ├── search.pl       # Generic IDA* with node counting
 │   ├── tables.pl       # Pruning tables
 │   ├── thistle.pl      # Solver A
-│   ├── cfop.pl         # Solver B: cross and F2L
-│   ├── oll_pll.pl      # Algorithm catalog and recognition
-│   ├── explainer.pl    # Meta-interpreter producing the trace
-│   ├── benchmark.pl    # Solver comparison
-│   └── server.pl       # HTTP API
+│   └── server.pl       # HTTP API and static web server
 ├── tests/              # plunit test suites, one per module
 ├── web/                # index.html, style.css, app.js
 ├── docs/               # Report and bibliography
@@ -88,11 +84,7 @@ facelets    -> cube
 tables      -> cube, moves
 search      -> cube, moves
 thistle     -> search, tables, cube, moves
-cfop        -> search, tables, cube, moves
-oll_pll     -> cube, moves, facelets
-explainer   -> thistle, cfop
-benchmark   -> thistle, cfop, moves
-server      -> all of the above
+server      -> thistle, facelets, validation, moves, cube
 ```
 
 ## Cube Representation
@@ -154,8 +146,11 @@ bash run_tests.sh
 Start the HTTP server:
 
 ```bash
-swipl -q -g "use_module(prolog/server),start,thread_get_message(_)"
+swipl -q -s prolog/server.pl -g "server:start,thread_get_message(_)"
 ```
+
+Open [http://localhost:8080](http://localhost:8080) in a browser to use the
+2D cube viewer.
 
 ## Usage
 
@@ -191,6 +186,23 @@ Generate a scramble and undo it with its inverse:
    Back == S.
 ```
 
+## HTTP API
+
+The server listens on port `8080` by default and exposes the following
+endpoints:
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/scramble?n=25` | Generates a scramble with `n` valid moves. |
+| `GET /api/state?moves=r,u,ri` | Applies moves and returns the facelets and state legality. |
+| `GET /api/validate?facelets=...` | Validates a 54-sticker facelet string. |
+| `GET /api/solve?moves=r,u,f` | Solves the state and returns all four phases with metrics. |
+
+Unknown moves return HTTP `400`. Illegal cube states return HTTP `422` from
+the solve endpoint. Successful solve responses include the total move count,
+node count, elapsed time and the moves and metrics for EO, CO+slice, G3 and
+Solved.
+
 ## Testing Strategy
 
 Move tables are easy to get subtly wrong, and a single bad index corrupts everything built on top. The test suite therefore checks **properties of the cube group** instead of isolated examples:
@@ -201,6 +213,9 @@ Move tables are easy to get subtly wrong, and a single bad index corrupts everyt
 - `R U R' U'` repeated six times is the identity, and not before.
 - For several pairs of faces (`R U`, `F R`, `L F`, `B D`, `D L`, `B R`) the composition has order exactly **105**, which is its known value on a real cube. This catches errors in how two faces interact.
 - Any random scramble followed by its inverse returns the solved cube.
+- Facelet conversion, legality reasons and invalid configurations are tested.
+- IDA* pruning, phase coordinates and all four solver phases are tested.
+- The HTTP solver response is tested without requiring a running server.
 
 Move tables were also cross-checked against Kociemba's reference implementation.
 
@@ -208,15 +223,15 @@ Move tables were also cross-checked against Kociemba's reference implementation.
 
 - [x] Cubie-based model and 18 move tables
 - [x] Property-based tests for the move group
-- [ ] Move utilities: inverses and random scrambles
-- [ ] State validation with explanations
-- [ ] Facelet conversion and a minimal 2D viewer
-- [ ] Generic IDA* with pruning and node counting
-- [ ] Solver A: Thistlethwaite phases with pruning tables
+- [x] Move utilities: inverses and random scrambles
+- [x] State validation with explanations
+- [x] Facelet conversion and a minimal 2D viewer
+- [x] Generic IDA* with pruning and node counting
+- [x] Solver A: Thistlethwaite phases with pruning tables
 - [ ] Solver B: CFOP (cross, F2L, OLL, PLL)
 - [ ] Explainer via meta-interpreter
 - [ ] Benchmark comparing both solvers
-- [ ] HTTP API and 3D web interface
+- [x] HTTP API and framework-free 2D web interface
 
 OLL and PLL are planned in their full form (57 + 21 cases), with a 2-look subset as a fallback. Every algorithm is checked automatically against the cube model.
 
