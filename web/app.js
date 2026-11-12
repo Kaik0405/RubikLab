@@ -100,9 +100,11 @@ async function updateState(manageBusy = true) {
     renderFacelets(state.facelets);
     setStatus(state.legal);
     renderMoves();
+    return true;
   } catch (error) {
     statusElement.textContent = error.message;
     statusElement.className = "status error";
+    return false;
   } finally {
     if (manageBusy) {
       setBusy(false);
@@ -134,65 +136,78 @@ async function reset() {
   if (requestInProgress) {
     return;
   }
-
-  function renderSolution(phases) {
-    solvePanel.hidden = false;
-    phaseList.innerHTML = "";
-    phases.forEach((phase, index) => {
-      const item = document.createElement("article");
-      item.className = "phase";
-      item.dataset.phase = String(index);
-      item.innerHTML = `
-        <strong>${phase.name}</strong>
-        <span class="phase-moves">${phase.moves.map(toNotation).join(" ") || "—"}</span>
-        <span>${phase.nodes} nodos · ${Number(phase.seconds).toFixed(4)} s</span>
-      `;
-      phaseList.appendChild(item);
-    });
-  }
-
-  function setActivePhase(index) {
-    phaseList.querySelectorAll(".phase").forEach((phase, phaseIndex) => {
-      phase.classList.toggle("active", phaseIndex === index);
-    });
-  }
-
-  async function solve() {
-    if (requestInProgress) {
-      return;
-    }
-    setBusy(true);
-    solveSummary.textContent = "Calculando...";
-    try {
-      const query = encodeURIComponent(appliedMoves.join(","));
-      const response = await fetch(`/api/solve?moves=${query}`);
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.reason || result.error || "No se pudo resolver.");
-      }
-      renderSolution(result.phases);
-      let phaseIndex = 0;
-      for (const phase of result.phases) {
-        setActivePhase(phaseIndex);
-        for (const move of phase.moves) {
-          appliedMoves.push(move);
-          await updateState();
-          await new Promise((resolve) => setTimeout(resolve, 400));
-        }
-        phaseIndex += 1;
-      }
-      setActivePhase(-1);
-      solveSummary.textContent = `Resuelto en ${result.total_moves} movimientos`;
-    } catch (error) {
-      solveSummary.textContent = error.message;
-      statusElement.textContent = error.message;
-      statusElement.className = "status error";
-    } finally {
-      setBusy(false);
-    }
-  }
   appliedMoves = [];
   await updateState();
+}
+
+function renderSolution(phases) {
+  solvePanel.hidden = false;
+  phaseList.innerHTML = "";
+  phases.forEach((phase, index) => {
+    const item = document.createElement("article");
+    item.className = "phase";
+    item.dataset.phase = String(index);
+    item.innerHTML = `
+      <strong>${phase.name}</strong>
+      <span class="phase-moves">${phase.moves.map(toNotation).join(" ") || "—"}</span>
+      <span>${phase.nodes} nodos · ${Number(phase.seconds).toFixed(4)} s</span>
+    `;
+    phaseList.appendChild(item);
+  });
+}
+
+function setActivePhase(index) {
+  phaseList.querySelectorAll(".phase").forEach((phase, phaseIndex) => {
+    phase.classList.toggle("active", phaseIndex === index);
+  });
+}
+
+function responseError(result, status) {
+  if (status === 422 && result.reason) {
+    return `Estado ilegal: ${result.reason}`;
+  }
+  if (status === 400) {
+    return result.error || "Movimiento inválido.";
+  }
+  return result.error || "No se pudo resolver.";
+}
+
+async function solve() {
+  if (requestInProgress) {
+    return;
+  }
+  setBusy(true);
+  solvePanel.hidden = false;
+  solveSummary.textContent = "Calculando...";
+  try {
+    const query = encodeURIComponent(appliedMoves.join(","));
+    const response = await fetch(`/api/solve?moves=${query}`);
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(responseError(result, response.status));
+    }
+    renderSolution(result.phases);
+    let phaseIndex = 0;
+    for (const phase of result.phases) {
+      setActivePhase(phaseIndex);
+      for (const move of phase.moves) {
+        appliedMoves.push(move);
+        if (!await updateState(false)) {
+          throw new Error("No se pudo actualizar el estado del cubo.");
+        }
+        await new Promise((resolve) => setTimeout(resolve, 400));
+      }
+      phaseIndex += 1;
+    }
+    setActivePhase(-1);
+    solveSummary.textContent = `Resuelto en ${result.total_moves} movimientos`;
+  } catch (error) {
+    solveSummary.textContent = error.message;
+    statusElement.textContent = error.message;
+    statusElement.className = "status error";
+  } finally {
+    setBusy(false);
+  }
 }
 
 function handleKey(event) {
