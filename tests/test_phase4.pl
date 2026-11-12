@@ -61,6 +61,20 @@ test(four_phases_solve_cube, [forall(between(1, 10, _))]) :-
     solve_phase4(S3, M4, _), apply_sequence(M4, S3, S4),
     S4 == Solved.
 
+% solve/3 devuelve cuatro fases cuyos movimientos, concatenados, resuelven.
+test(solve_returns_four_phases, [forall(between(1, 10, _))]) :-
+    random_scramble(25, Scramble),
+    solved(Solved),
+    apply_sequence(Scramble, Solved, State),
+    solve(State, Phases, stats(Nodes, Seconds)),
+    length(Phases, 4),
+    findall(M, member(phase(_, _, M, _), Phases), MoveLists),
+    append(MoveLists, AllMoves),
+    apply_sequence(AllMoves, State, Result),
+    Result == Solved,
+    Nodes >= 0,
+    Seconds >= 0.
+
 :- end_tests(phase4).
 
 %% report_phase4 is det.

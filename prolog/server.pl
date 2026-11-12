@@ -1,4 +1,4 @@
-:- module(server, [start/0, start/1]).
+:- module(server, [start/0, start/1, solve_response/2]).
 
 :- use_module(library(http/thread_httpd), [http_server/2]).
 :- use_module(library(http/http_dispatch), [
@@ -9,10 +9,13 @@
 :- use_module(library(http/http_parameters), [http_parameters/2]).
 :- use_module(library(http/http_files), [http_reply_from_files/3]).
 :- use_module(library(apply), [maplist/2]).
+:- use_module(library(lists), [sum_list/2]).
 :- use_module(cube, [move/1, solved/1, apply_sequence/3]).
 :- use_module(moves, [random_scramble/2]).
 :- use_module(facelets, [state_to_facelets/2, facelets_to_state/2]).
 :- use_module(validation, [legal/1, illegal_reason/2]).
+:- use_module(thistle, [solve/3]).
+:- use_module(tables, [phase3_table/1, phase4_table/1]).
 
 /** <module> Servidor HTTP de RubikLab.
 
@@ -23,6 +26,7 @@ web/. Depende de cube.pl, moves.pl, facelets.pl y validation.pl.
 :- http_handler(root(api/scramble), api_scramble, [method(get)]).
 :- http_handler(root(api/state), api_state, [method(get)]).
 :- http_handler(root(api/validate), api_validate, [method(get)]).
+:- http_handler(root(api/solve), api_solve, [method(get)]).
 :- http_handler(root(.), static_files, [prefix]).
 
 %% start is det.
@@ -33,7 +37,16 @@ start :-
 %% start(+Port) is det.
 % Inicia el servidor en el puerto indicado.
 start(Port) :-
+    prewarm_solver,
     http_server(http_dispatch, [port(Port)]).
+
+%% prewarm_solver is det.
+% Construye las tablas del solver y resuelve el estado resuelto antes de aceptar peticiones.
+prewarm_solver :-
+    phase3_table(_),
+    phase4_table(_),
+    solved(State),
+    solve(State, _, _).
 
 %% api_scramble(+Request) is det.
 % Devuelve una mezcla aleatoria del tamaño solicitado.
@@ -72,6 +85,62 @@ api_validate(Request) :-
     ->  validate_state(State)
     ;   reply_json_dict(_{valid: false, reason: invalid_facelets})
     ).
+
+%% api_solve(+Request) is det.
+% Resuelve los movimientos recibidos y devuelve las cuatro fases en JSON.
+api_solve(Request) :-
+    http_parameters(Request, [
+        moves(MoveText, [optional(true), default(''), atom])
+    ]),
+    parse_moves(MoveText, Moves),
+    solved(Solved),
+    apply_sequence(Moves, Solved, State),
+    (   legal(State)
+    ->  solve_response_state(State, Dict),
+        reply_json_dict(Dict)
+    ;   illegal_reason(State, Reason),
+        throw(http_reply(status(422, json(_{error: "illegal_state",
+                                             reason: Reason}))))
+    ).
+
+%% solve_response(+Moves, -Dict) is semidet.
+% Aplica una secuencia y construye la respuesta pura del solver.
+solve_response(Moves, Dict) :-
+    is_list(Moves),
+    solved(Solved),
+    apply_sequence(Moves, Solved, State),
+    solve_response_state(State, Dict).
+
+solve_response(State, Dict) :-
+    State = state(_, _, _, _),
+    (   legal(State)
+    ->  solve_response_state(State, Dict)
+    ;   illegal_reason(State, Reason),
+        Dict = _{error: "illegal_state", reason: Reason}
+    ).
+
+%% solve_response_state(+State, -Dict) is semidet.
+% Construye la respuesta del solver para un estado validado.
+solve_response_state(State, _{reached: "solved",
+                              total_moves: TotalMoves,
+                              nodes: TotalNodes,
+                              seconds: TotalSeconds,
+                              phases: PhaseDicts}) :-
+    legal(State),
+    solve(State, Phases, stats(TotalNodes, TotalSeconds)),
+    maplist(phase_dict, Phases, PhaseDicts),
+    maplist(phase_moves, Phases, PhaseMoves),
+    maplist(length, PhaseMoves, Lengths),
+    sum_list(Lengths, TotalMoves).
+
+%% phase_dict(+Phase, -Dict) is det.
+% Convierte una fase del solver al formato JSON.
+phase_dict(phase(Id, Name, Moves, stats(Nodes, Seconds)),
+           _{id: Id, name: Name, moves: Moves, nodes: Nodes, seconds: Seconds}).
+
+%% phase_moves(+Phase, -Moves) is det.
+% Extrae los movimientos de una fase.
+phase_moves(phase(_, _, Moves, _), Moves).
 
 %% validate_state(+State) is det.
 % Genera la respuesta JSON para un estado ya decodificado.

@@ -159,6 +159,44 @@ h2 {
   font-size: 0.9rem;
 }
 
+.solve-panel {
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.phase {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.6fr) minmax(120px, 2fr) minmax(130px, 1fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.phase strong {
+  color: var(--text);
+}
+
+.phase-moves {
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  word-break: break-word;
+}
+
+.phase.active {
+  color: var(--text);
+  background: rgba(156, 84, 255, 0.18);
+}
+
+#solveSummary {
+  margin: 16px 0 0;
+  color: var(--accent);
+  font-weight: 700;
+}
+
 @media (max-width: 560px) {
   :root {
     --sticker-size: min(7vw, 36px);
@@ -171,5 +209,10 @@ h2 {
 
   .cube-panel {
     padding: 14px;
+  }
+
+  .phase {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 }

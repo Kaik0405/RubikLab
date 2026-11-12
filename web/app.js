@@ -6,6 +6,10 @@ const statusElement = document.querySelector("#status");
 const doubleIndicator = document.querySelector("#doubleIndicator");
 const scrambleButton = document.querySelector("#scrambleButton");
 const resetButton = document.querySelector("#resetButton");
+const solveButton = document.querySelector("#solveButton");
+const solvePanel = document.querySelector("#solvePanel");
+const phaseList = document.querySelector("#phaseList");
+const solveSummary = document.querySelector("#solveSummary");
 
 let appliedMoves = [];
 let doubleMovePending = false;
@@ -76,11 +80,14 @@ function setBusy(isBusy) {
   requestInProgress = isBusy;
   scrambleButton.disabled = isBusy;
   resetButton.disabled = isBusy;
+  solveButton.disabled = isBusy;
 }
 
 // Solicita al backend el estado correspondiente a la lista de movimientos.
-async function updateState() {
-  setBusy(true);
+async function updateState(manageBusy = true) {
+  if (manageBusy) {
+    setBusy(true);
+  }
   statusElement.textContent = "Actualizando...";
   statusElement.className = "status";
   try {
@@ -97,7 +104,9 @@ async function updateState() {
     statusElement.textContent = error.message;
     statusElement.className = "status error";
   } finally {
-    setBusy(false);
+    if (manageBusy) {
+      setBusy(false);
+    }
   }
 }
 
@@ -113,7 +122,7 @@ async function scramble() {
     }
     const result = await response.json();
     appliedMoves = result.moves;
-    await updateState();
+    await updateState(false);
   } catch (error) {
     statusElement.textContent = error.message;
     statusElement.className = "status error";
@@ -124,6 +133,63 @@ async function scramble() {
 async function reset() {
   if (requestInProgress) {
     return;
+  }
+
+  function renderSolution(phases) {
+    solvePanel.hidden = false;
+    phaseList.innerHTML = "";
+    phases.forEach((phase, index) => {
+      const item = document.createElement("article");
+      item.className = "phase";
+      item.dataset.phase = String(index);
+      item.innerHTML = `
+        <strong>${phase.name}</strong>
+        <span class="phase-moves">${phase.moves.map(toNotation).join(" ") || "—"}</span>
+        <span>${phase.nodes} nodos · ${Number(phase.seconds).toFixed(4)} s</span>
+      `;
+      phaseList.appendChild(item);
+    });
+  }
+
+  function setActivePhase(index) {
+    phaseList.querySelectorAll(".phase").forEach((phase, phaseIndex) => {
+      phase.classList.toggle("active", phaseIndex === index);
+    });
+  }
+
+  async function solve() {
+    if (requestInProgress) {
+      return;
+    }
+    setBusy(true);
+    solveSummary.textContent = "Calculando...";
+    try {
+      const query = encodeURIComponent(appliedMoves.join(","));
+      const response = await fetch(`/api/solve?moves=${query}`);
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.reason || result.error || "No se pudo resolver.");
+      }
+      renderSolution(result.phases);
+      let phaseIndex = 0;
+      for (const phase of result.phases) {
+        setActivePhase(phaseIndex);
+        for (const move of phase.moves) {
+          appliedMoves.push(move);
+          await updateState();
+          await new Promise((resolve) => setTimeout(resolve, 400));
+        }
+        phaseIndex += 1;
+      }
+      setActivePhase(-1);
+      solveSummary.textContent = `Resuelto en ${result.total_moves} movimientos`;
+    } catch (error) {
+      solveSummary.textContent = error.message;
+      statusElement.textContent = error.message;
+      statusElement.className = "status error";
+    } finally {
+      setBusy(false);
+    }
   }
   appliedMoves = [];
   await updateState();
@@ -151,5 +217,6 @@ function handleKey(event) {
 createCube();
 scrambleButton.addEventListener("click", scramble);
 resetButton.addEventListener("click", reset);
+solveButton.addEventListener("click", solve);
 document.addEventListener("keydown", handleKey);
 updateState();

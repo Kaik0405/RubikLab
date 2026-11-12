@@ -23,6 +23,7 @@
     <section class="controls" aria-label="Controles del cubo">
       <button id="scrambleButton" type="button">Scramble</button>
       <button id="resetButton" type="button" class="secondary">Reset</button>
+      <button id="solveButton" type="button">Solve</button>
       <span id="doubleIndicator" class="double-indicator" aria-live="polite"></span>
     </section>
 
@@ -30,6 +31,12 @@
       <h2>Movimientos</h2>
       <p id="moves" class="moves-list">Resuelto</p>
       <p class="help">U R F D L B giran · Shift invierte · 2 aplica doble giro</p>
+    </section>
+
+    <section id="solvePanel" class="solve-panel" hidden>
+      <h2>Solución</h2>
+      <div id="phaseList"></div>
+      <p id="solveSummary"></p>
     </section>
   </main>
   <script src="app.js"></script>

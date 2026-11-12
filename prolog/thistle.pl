@@ -8,10 +8,11 @@
     in_g3/1,
     solve_phase3/3,
     phase4_moves/1,
-    solve_phase4/3
+    solve_phase4/3,
+    solve/3
 ]).
 
-:- use_module(cube, [move/1, solved/1]).
+:- use_module(cube, [move/1, solved/1, apply_sequence/3]).
 :- use_module(moves, []).
 :- use_module(search, [ida_star/7]).
 :- use_module(tables, [
@@ -27,14 +28,17 @@
     table_distance/3
 ]).
 :- use_module(library(assoc), [get_assoc/3]).
-:- use_module(library(lists), [max_list/2]).
+:- use_module(library(lists), [max_list/2, sum_list/2]).
+:- use_module(library(pairs), [pairs_keys_values/3]).
 :- use_module(library(apply), [maplist/2]).
 
-/** <module> Fases iniciales del método de Thistlethwaite.
+/** <module> Método de Thistlethwaite completo (fases 1 a 4).
 
-Exporta las tres primeras fases de Thistlethwaite, sus movimientos permitidos
-y predicados de pertenencia a G2 y G3. Depende de cube.pl, moves.pl, search.pl
-y tables.pl.
+Resuelve el cubo en cuatro fases con IDA* y tablas de distancias: orientación
+de aristas, orientación de esquinas y capa intermedia, coclases de G3 y, por
+último, el cubo resuelto con medios giros. Exporta cada fase por separado, los
+predicados de pertenencia a G2 y G3, y solve/3, que encadena las cuatro fases.
+Depende de cube.pl, moves.pl, search.pl y tables.pl.
 */
 
 :- meta_predicate solve_phase1(+, -, -).
@@ -157,3 +161,26 @@ phase4_heuristic(Table, State, Distance) :-
     ->  Distance = Known
     ;   Distance = 9
     ).
+
+%% solve(+State, -Phases, -Stats) is semidet.
+% Resuelve el cubo encadenando las cuatro fases. Phases es una lista de
+% phase(Id, Nombre, Movimientos, stats(Nodos, Segundos)); Stats acumula los
+% nodos y los segundos de todas las fases. Falla si el estado no es legal.
+solve(State, Phases, stats(TotalNodes, TotalSeconds)) :-
+    solve_phase1(State, Moves1, Stats1),
+    apply_sequence(Moves1, State, State1),
+    solve_phase2(State1, Moves2, Stats2),
+    apply_sequence(Moves2, State1, State2),
+    solve_phase3(State2, Moves3, Stats3),
+    apply_sequence(Moves3, State2, State3),
+    solve_phase4(State3, Moves4, Stats4),
+    Phases = [phase(1, 'EO', Moves1, Stats1),
+              phase(2, 'CO+slice', Moves2, Stats2),
+              phase(3, 'G3', Moves3, Stats3),
+              phase(4, 'Solved', Moves4, Stats4)],
+    findall(Nodes-Seconds,
+            member(phase(_, _, _, stats(Nodes, Seconds)), Phases),
+            Pairs),
+    pairs_keys_values(Pairs, NodeList, SecondList),
+    sum_list(NodeList, TotalNodes),
+    sum_list(SecondList, TotalSeconds).

@@ -37,12 +37,15 @@ All cube logic lives in Prolog. The web interface is a thin layer that renders t
 | Cube model | Cubie-based state with permutation and orientation | Done |
 | 18 moves | Quarter, inverse and half turns of the six faces | Done |
 | Move utilities | Inverse of a move or sequence, random scrambles | In progress |
-| State validation | Detects unreachable states and explains why | Planned |
-| Solver A | Four-phase Thistlethwaite approach with IDA* and pruning tables | Planned |
+| State validation | Detects unreachable states and explains why | Done |
+| Solver A | Four-phase Thistlethwaite approach with IDA* and pruning tables | Done |
 | Solver B | CFOP: cross and F2L via IDA*, OLL/PLL via a verified algorithm catalog | Planned |
 | Explainer | Reports which stage and rule produced each part of a solution | Planned |
 | Benchmark | Compares both solvers by move count, time and nodes explored | Planned |
-| Web UI | 3D cube, keyboard controls, solve and compare panels | Planned |
+| Web UI | 2D cube, keyboard controls and solve panel | Done |
+
+Solver A measured **31.65 moves on average** over 20 scrambles of 25 moves,
+with a minimum of 27 and a maximum of 36.
 
 ## Design Principles
 
