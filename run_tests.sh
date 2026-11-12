@@ -24,12 +24,18 @@ case "${1:-all}" in
   thistle)
     swipl -g 'set_test_options([format(log)]),run_tests' -t halt tests/test_thistle.pl
     ;;
+  phase3)
+    swipl -g 'set_test_options([format(log)]),run_tests' -t halt tests/test_phase3.pl
+    ;;
+  phase4)
+    swipl -g 'set_test_options([format(log)]),run_tests' -t halt tests/test_phase4.pl
+    ;;
   all)
     swipl -g 'set_test_options([format(log)]),run_tests' -t halt \
-      tests/test_cube.pl tests/test_moves.pl tests/test_validation.pl tests/test_facelets.pl tests/test_search.pl tests/test_tables.pl tests/test_thistle.pl
+      tests/test_cube.pl tests/test_moves.pl tests/test_validation.pl tests/test_facelets.pl tests/test_search.pl tests/test_tables.pl tests/test_thistle.pl tests/test_phase3.pl tests/test_phase4.pl
     ;;
   *)
-    echo "Uso: $0 [all|cube|moves|validation|facelets|search|tables|thistle]" >&2
+    echo "Uso: $0 [all|cube|moves|validation|facelets|search|tables|thistle|phase3|phase4]" >&2
     exit 1
     ;;
 esac
