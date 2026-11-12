@@ -128,6 +128,7 @@ async function scramble() {
   } catch (error) {
     statusElement.textContent = error.message;
     statusElement.className = "status error";
+  } finally {
     setBusy(false);
   }
 }
