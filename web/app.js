@@ -10,6 +10,7 @@ const resetButton = document.querySelector("#resetButton");
 const solveButton = document.querySelector("#solveButton");
 const compareButton = document.querySelector("#compareButton");
 const benchmarkButton = document.querySelector("#benchmarkButton");
+const validateTabButton = document.querySelector("#validateTabButton");
 const methodSelect = document.querySelector("#methodSelect");
 const solvePanel = document.querySelector("#solvePanel");
 const phaseList = document.querySelector("#phaseList");
@@ -18,6 +19,12 @@ const comparePanel = document.querySelector("#comparePanel");
 const benchmarkPanel = document.querySelector("#benchmarkPanel");
 const benchmarkStatus = document.querySelector("#benchmarkStatus");
 const benchmarkTable = document.querySelector("#benchmarkTable");
+const validatePanel = document.querySelector("#validatePanel");
+const validationCube = document.querySelector("#validationCube");
+const loadCurrentButton = document.querySelector("#loadCurrentButton");
+const solvedValidationButton = document.querySelector("#solvedValidationButton");
+const validateButton = document.querySelector("#validateButton");
+const validationResult = document.querySelector("#validationResult");
 const intervalControl = document.querySelector("#intervalControl");
 const intervalValue = document.querySelector("#intervalValue");
 const comparison = {
@@ -39,6 +46,7 @@ let userMoves = [];
 let solutionMoves = [];
 let doubleMovePending = false;
 let requestInProgress = false;
+let validationFacelets = [];
 
 const faceLayout = [
   { face: "u", start: 0, column: 4, row: 1 },
@@ -195,6 +203,92 @@ function renderFacelets(container, facelets) {
   });
 }
 
+function setValidationFacelets(facelets) {
+  validationFacelets = Array.from(facelets);
+  renderFacelets(validationCube, validationFacelets);
+}
+
+function solvedFacelets() {
+  return "U".repeat(9) + "R".repeat(9) + "F".repeat(9) +
+    "D".repeat(9) + "L".repeat(9) + "B".repeat(9);
+}
+
+const validationReasons = {
+  piezas_invalidas_o_duplicadas: "Hay piezas repetidas o que faltan",
+  orientacion_esquinas_invalida: "Una esquina está torcida: la suma de giros no es múltiplo de 3",
+  orientacion_aristas_invalida: "Una arista está volteada: la suma de giros no es par",
+  paridad_permutacion_invalida: "Hay piezas intercambiadas: la paridad es imposible",
+  invalid_facelets: "Los colores no forman un cubo físico"
+};
+
+function showValidationResult(valid, reason) {
+  validationResult.className = `validation-result ${valid ? "valid" : "invalid"}`;
+  validationResult.textContent = valid
+    ? "✓ El cubo es válido"
+    : `✗ ${validationReasons[reason] || reason}`;
+}
+
+async function validateCube() {
+  if (requestInProgress) {
+    return;
+  }
+  setBusy(true);
+  try {
+    const facelets = encodeURIComponent(validationFacelets.join(""));
+    const response = await fetch(`/api/validate?facelets=${facelets}`);
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || "No se pudo validar el cubo.");
+    }
+    showValidationResult(result.valid, result.reason);
+  } catch (error) {
+    validationResult.className = "validation-result invalid";
+    validationResult.textContent = `✗ ${error.message}`;
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function loadCurrentCube() {
+  if (requestInProgress) {
+    return;
+  }
+  setBusy(true);
+  try {
+    const state = await fetchStateForMoves(combinedMoves());
+    setValidationFacelets(state.facelets);
+    validationResult.textContent = "";
+    validationResult.className = "validation-result";
+  } catch (error) {
+    validationResult.textContent = `✗ ${error.message}`;
+    validationResult.className = "validation-result invalid";
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function loadDemo(kind) {
+  if (requestInProgress) {
+    return;
+  }
+  setBusy(true);
+  try {
+    const response = await fetch(`/api/demo_illegal?kind=${kind}`);
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || "No se pudo cargar el ejemplo.");
+    }
+    setValidationFacelets(result.facelets);
+    validationResult.textContent = "";
+    validationResult.className = "validation-result";
+  } catch (error) {
+    validationResult.textContent = `✗ ${error.message}`;
+    validationResult.className = "validation-result invalid";
+  } finally {
+    setBusy(false);
+  }
+}
+
 // Actualiza la lista visible usando la notación estándar del cubo.
 function renderMoves() {
   movesElement.textContent = userMoves.length
@@ -228,17 +322,25 @@ function toNotation(move) {
 }
 
 function setStatus(isLegal) {
-  statusElement.textContent = isLegal ? "Estado legal" : "Estado ilegal";
+  statusElement.textContent = isLegal ? "✓ Estado legal" : "✕ Estado ilegal";
   statusElement.className = isLegal ? "status" : "status invalid";
 }
 
 function setBusy(isBusy) {
   requestInProgress = isBusy;
+  document.body.classList.toggle("is-loading", isBusy);
   scrambleButton.disabled = isBusy;
   resetButton.disabled = isBusy;
   solveButton.disabled = isBusy;
   compareButton.disabled = isBusy;
   benchmarkButton.disabled = isBusy;
+  validateTabButton.disabled = isBusy;
+  loadCurrentButton.disabled = isBusy;
+  solvedValidationButton.disabled = isBusy;
+  validateButton.disabled = isBusy;
+  document.querySelectorAll(".demo-button").forEach((button) => {
+    button.disabled = isBusy;
+  });
 }
 
 // Solicita al backend el estado correspondiente a la lista de movimientos.
@@ -401,13 +503,40 @@ function handleKey(event) {
 
 createCube(cubeElement);
 Object.values(comparison).forEach((view) => createCube(view.cube));
+createCube(validationCube);
+validationCube.querySelectorAll(".sticker").forEach((sticker) => {
+  const index = Number(sticker.dataset.index);
+  const center = index % 9 === 4;
+  if (!center) {
+    sticker.addEventListener("click", () => {
+      const colors = ["U", "R", "F", "D", "L", "B"];
+      const current = colors.indexOf(validationFacelets[index]);
+      validationFacelets[index] = colors[(current + 1) % colors.length];
+      renderFacelets(validationCube, validationFacelets);
+    });
+  }
+});
 scrambleButton.addEventListener("click", scramble);
 resetButton.addEventListener("click", reset);
 solveButton.addEventListener("click", solve);
 compareButton.addEventListener("click", compare);
 benchmarkButton.addEventListener("click", benchmark);
+validateTabButton.addEventListener("click", () => {
+  validatePanel.hidden = !validatePanel.hidden;
+});
+loadCurrentButton.addEventListener("click", loadCurrentCube);
+solvedValidationButton.addEventListener("click", () => {
+  setValidationFacelets(solvedFacelets());
+  validationResult.textContent = "";
+  validationResult.className = "validation-result";
+});
+validateButton.addEventListener("click", validateCube);
+document.querySelectorAll(".demo-button").forEach((button) => {
+  button.addEventListener("click", () => loadDemo(button.dataset.demoKind));
+});
 intervalControl.addEventListener("input", () => {
   intervalValue.textContent = intervalControl.value;
 });
 document.addEventListener("keydown", handleKey);
+setValidationFacelets(solvedFacelets());
 updateState();

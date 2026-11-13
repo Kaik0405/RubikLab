@@ -3,78 +3,136 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Visor 2D del cubo</title>
+  <title>RubikLab · Estrategias de resolución</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="app">
-    <header class="header">
+    <header class="site-header">
       <div>
         <p class="eyebrow">RubikLab</p>
-        <h1>Visor 2D del cubo</h1>
+        <h1>Laboratorio de estrategias de resolución</h1>
+        <p class="subtitle">laboratorio de estrategias de resolución en Prolog</p>
       </div>
-      <p id="status" class="status" aria-live="polite">Cargando...</p>
+      <p id="status" class="status" aria-live="polite"><span aria-hidden="true">●</span> Cargando...</p>
     </header>
 
-    <section class="controls" aria-label="Controles del cubo">
-      <button id="scrambleButton" type="button">Scramble</button>
-      <button id="resetButton" type="button" class="secondary">Reset</button>
-      <label for="methodSelect">Método</label>
-      <select id="methodSelect">
-        <option value="thistle">Thistlethwaite</option>
-        <option value="cfop">CFOP</option>
-      </select>
-      <button id="solveButton" type="button">Solve</button>
-      <button id="compareButton" type="button" class="secondary">Comparar</button>
-      <button id="benchmarkButton" type="button" class="secondary">Benchmark</button>
-      <span id="doubleIndicator" class="double-indicator" aria-live="polite"></span>
-    </section>
+    <nav class="tabs" aria-label="Secciones">
+      <button id="solveButton" class="tab-button tab-primary" type="button">Resolver</button>
+      <button id="compareButton" class="tab-button" type="button">Comparar</button>
+      <button id="validateTabButton" class="tab-button" type="button">Validar</button>
+      <button id="benchmarkButton" class="tab-button" type="button">Benchmark</button>
+    </nav>
 
-    <section class="cube-panel" aria-label="Cubo de Rubik desplegado">
-      <div id="cube" class="cube-net"></div>
-    </section>
+    <section class="workspace-grid">
+      <div class="left-column">
+        <section class="card cube-card" aria-label="Cubo de Rubik desplegado">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Estado actual</p>
+              <h2>Cubo 3×3×3</h2>
+            </div>
+            <span class="cube-mark" aria-hidden="true">3×3</span>
+          </div>
+          <div id="cube" class="cube-net"></div>
+          <p class="keyboard-help">u r f d l b <span>·</span> Shift = inverso <span>·</span> 2 = doble</p>
+        </section>
 
-    <section class="moves-panel" aria-label="Movimientos del cubo">
-      <p class="moves-line"><strong>Movimientos:</strong> <span id="moves">Resuelto</span></p>
-      <p class="moves-line"><strong>Solución:</strong> <span id="solutionMoves">—</span></p>
-      <p class="help">U R F D L B giran · Shift invierte · 2 aplica doble giro</p>
-    </section>
-
-    <section id="solvePanel" class="solve-panel" hidden>
-      <h2>Solución</h2>
-      <div id="phaseList"></div>
-      <p id="solveSummary"></p>
-    </section>
-
-    <section id="comparePanel" class="compare-panel" hidden>
-      <div class="compare-controls">
-        <h2>Comparación</h2>
-        <label for="intervalControl">Intervalo: <output id="intervalValue">400</output> ms</label>
-        <input id="intervalControl" type="range" min="100" max="1000" step="50" value="400">
+        <section class="card controls-card" aria-label="Controles del cubo">
+          <div class="control-row">
+            <button id="scrambleButton" type="button">Scramble</button>
+            <button id="resetButton" type="button" class="secondary">Reset</button>
+          </div>
+          <label class="field-label" for="methodSelect">Método de resolución</label>
+          <select id="methodSelect">
+            <option value="thistle">Thistlethwaite</option>
+            <option value="cfop">CFOP</option>
+          </select>
+          <div class="moves-panel">
+            <p class="moves-line"><strong>Mezcla</strong> <span id="moves">Resuelto</span></p>
+            <p class="moves-line"><strong>Solución</strong> <span id="solutionMoves">—</span></p>
+          </div>
+          <span id="doubleIndicator" class="double-indicator" aria-live="polite"></span>
+        </section>
       </div>
-      <div class="comparison-cubes">
-        <article class="comparison-method" id="compareThistle">
-          <h3>Thistlethwaite</h3>
-          <div class="comparison-cube" id="thistleCube"></div>
-          <p class="comparison-stage" id="thistleStage">Pendiente</p>
-          <p><span id="thistleCount">0</span> movimientos</p>
-        </article>
-        <article class="comparison-method" id="compareCfop">
-          <h3>CFOP</h3>
-          <div class="comparison-cube" id="cfopCube"></div>
-          <p class="comparison-stage" id="cfopStage">Pendiente</p>
-          <p><span id="cfopCount">0</span> movimientos</p>
-        </article>
+
+      <div class="right-column">
+        <section id="solvePanel" class="card solve-panel" hidden>
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Resolver</p>
+              <h2>Solución y explicación</h2>
+            </div>
+            <p id="solveSummary" class="summary"></p>
+          </div>
+          <div id="phaseList" class="phase-list"></div>
+        </section>
+
+        <section id="comparePanel" class="card compare-panel" hidden>
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Comparar</p>
+              <h2>Dos estrategias, un estado</h2>
+            </div>
+            <label class="range-label" for="intervalControl">
+              Intervalo <output id="intervalValue">400</output> ms
+              <input id="intervalControl" type="range" min="100" max="1000" step="50" value="400">
+            </label>
+          </div>
+          <div class="comparison-cubes">
+            <article class="comparison-method" id="compareThistle">
+              <div class="method-heading"><h3>Thistlethwaite</h3><span class="winner-badge">Terminó primero</span></div>
+              <div class="comparison-cube" id="thistleCube"></div>
+              <div class="progress-track"><span class="progress-bar"></span></div>
+              <p class="comparison-stage" id="thistleStage">Pendiente</p>
+              <p class="comparison-count"><span id="thistleCount">0</span> movimientos</p>
+            </article>
+            <article class="comparison-method" id="compareCfop">
+              <div class="method-heading"><h3>CFOP</h3><span class="winner-badge">Terminó primero</span></div>
+              <div class="comparison-cube" id="cfopCube"></div>
+              <div class="progress-track"><span class="progress-bar"></span></div>
+              <p class="comparison-stage" id="cfopStage">Pendiente</p>
+              <p class="comparison-count"><span id="cfopCount">0</span> movimientos</p>
+            </article>
+          </div>
+          <div id="compareSummary"></div>
+        </section>
+
+        <section id="validatePanel" class="card validate-panel" hidden>
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Validar</p>
+              <h2>Comprueba un estado</h2>
+            </div>
+            <span class="muted-label">Haz clic en un sticker para cambiarlo</span>
+          </div>
+          <div id="validationCube" class="cube-net editable-cube" aria-label="Cubo editable para validar"></div>
+          <div class="validation-actions">
+            <button id="loadCurrentButton" type="button" class="secondary">Cargar el cubo actual</button>
+            <button id="solvedValidationButton" type="button" class="secondary">Estado resuelto</button>
+            <button id="validateButton" type="button">Validar estado</button>
+          </div>
+          <div class="demo-actions">
+            <span class="muted-label">Ejemplos ilegales</span>
+            <button type="button" class="secondary demo-button" data-demo-kind="corner">Esquina torcida</button>
+            <button type="button" class="secondary demo-button" data-demo-kind="edge">Arista volteada</button>
+            <button type="button" class="secondary demo-button" data-demo-kind="swap">Esquinas intercambiadas</button>
+          </div>
+          <p id="validationResult" class="validation-result" aria-live="polite"></p>
+        </section>
+
+        <section id="benchmarkPanel" class="card benchmark-panel" hidden>
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Benchmark</p>
+              <h2>Rendimiento comparado</h2>
+            </div>
+          </div>
+          <p id="benchmarkStatus" class="benchmark-status"></p>
+          <div id="benchmarkTable"></div>
+        </section>
       </div>
-      <div id="compareSummary"></div>
     </section>
-
-    <section id="benchmarkPanel" class="solve-panel" hidden>
-      <h2>Benchmark</h2>
-      <p id="benchmarkStatus"></p>
-      <div id="benchmarkTable"></div>
-    </section>
-
   </main>
   <script src="app.js"></script>
 </body>

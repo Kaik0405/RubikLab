@@ -28,6 +28,7 @@ benchmark, y sirve la carpeta web/.
 :- http_handler(root(api/scramble), api_scramble, [method(get)]).
 :- http_handler(root(api/state), api_state, [method(get)]).
 :- http_handler(root(api/validate), api_validate, [method(get)]).
+:- http_handler(root(api/demo_illegal), api_demo_illegal, [method(get)]).
 :- http_handler(root(api/solve), api_solve, [method(get)]).
 :- http_handler(root(api/compare), api_compare, [method(get)]).
 :- http_handler(root(api/benchmark), api_benchmark, [method(get)]).
@@ -88,6 +89,31 @@ api_validate(Request) :-
     ->  validate_state(State)
     ;   reply_json_dict(_{valid: false, reason: invalid_facelets})
     ).
+
+%% api_demo_illegal(+Request) is det.
+% Devuelve un estado ilegal de demostracion.
+api_demo_illegal(Request) :-
+    http_parameters(Request, [
+        kind(Kind, [atom])
+    ]),
+    demo_state(Kind, State),
+    state_to_facelets(State, Facelets),
+    reply_json_dict(_{facelets: Facelets}).
+
+%% demo_state(+Kind, -State) is semidet.
+% Construye estados ilegales modificando el estado resuelto.
+demo_state(corner, state(CP, CO, EP, EO)) :-
+    solved(state(CP, [First|Rest], EP, EO)),
+    Twisted is (First + 1) mod 3,
+    CO = [Twisted|Rest].
+demo_state(edge, state(CP, CO, EP, EO)) :-
+    solved(state(CP, CO, EP, [First|Rest])),
+    Flipped is (First + 1) mod 2,
+    EO = [Flipped|Rest].
+demo_state(swap, state([Second, First|Rest], CO, EP, EO)) :-
+    solved(state([First, Second|Rest], CO, EP, EO)).
+demo_state(_, _) :-
+    throw(http_reply(bad_request('Unknown demo kind'))).
 
 %% api_solve(+Request) is det.
 % Resuelve una mezcla con el metodo indicado.
