@@ -27,7 +27,6 @@ const validateButton = document.querySelector("#validateButton");
 const validationResult = document.querySelector("#validationResult");
 const intervalControl = document.querySelector("#intervalControl");
 const intervalValue = document.querySelector("#intervalValue");
-
 const comparison = {
   thistle: {
     cube: document.querySelector("#thistleCube"),
@@ -64,7 +63,7 @@ const faceNames = {
 };
 
 function createCube(container) {
-  container.classList.add("cube-net");
+  container.replaceChildren();
   faceLayout.forEach((face) => {
     for (let index = 0; index < 9; index += 1) {
       const sticker = document.createElement("div");
@@ -75,6 +74,72 @@ function createCube(container) {
       container.appendChild(sticker);
     }
   });
+}
+
+// Cubo isométrico SVG para el comparador. No depende de preserve-3d,
+// backface-visibility ni de la aceleración 3D del navegador.
+function create3DCube(container) {
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("class", "cube-3d-svg");
+  svg.setAttribute("viewBox", "0 0 260 245");
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", container.getAttribute("aria-label") || "Cubo de Rubik en 3D");
+  svg.setAttribute("focusable", "false");
+
+  // Cada cara se define por una esquina inicial y dos vectores de borde.
+  // Se muestran U, F y R, las tres caras visibles de un cubo isométrico.
+  const faces = [
+    { start: 18, a: [31, 82],  b: [130, 139], d: [31, 181] }, // Frente (F)
+    { start: 9,  a: [130, 139], b: [229, 82],  d: [130, 238] }, // Derecha (R)
+    { start: 0,  a: [130, 24],  b: [229, 82],  d: [31, 82] } // Superior (U)
+  ];
+
+  const point = (a, b, d, u, v) => [
+    a[0] + (b[0] - a[0]) * u + (d[0] - a[0]) * v,
+    a[1] + (b[1] - a[1]) * u + (d[1] - a[1]) * v
+  ];
+
+  faces.forEach(({ start, a, b, d }) => {
+    for (let row = 0; row < 3; row += 1) {
+      for (let col = 0; col < 3; col += 1) {
+        const inset = 0.045;
+        const u0 = (col + inset) / 3;
+        const u1 = (col + 1 - inset) / 3;
+        const v0 = (row + inset) / 3;
+        const v1 = (row + 1 - inset) / 3;
+        const corners = [
+          point(a, b, d, u0, v0),
+          point(a, b, d, u1, v0),
+          point(a, b, d, u1, v1),
+          point(a, b, d, u0, v1)
+        ];
+        const sticker = document.createElementNS(svgNS, "polygon");
+        sticker.setAttribute("class", "sticker");
+        sticker.setAttribute("data-index", String(start + row * 3 + col));
+        sticker.setAttribute("points", corners.map(([x, y]) => `${x},${y}`).join(" "));
+        svg.appendChild(sticker);
+      }
+    }
+  });
+
+  // Contorno exterior más marcado para reforzar el volumen del cubo.
+  const outlines = [
+    "31,82 130,139 130,238 31,181",
+    "130,139 229,82 229,181 130,238",
+    "130,24 229,82 130,139 31,82"
+  ];
+  outlines.forEach((points) => {
+    const outline = document.createElementNS(svgNS, "polygon");
+    outline.setAttribute("class", "cube-face-outline");
+    outline.setAttribute("points", points);
+    svg.appendChild(outline);
+  });
+
+  container.replaceChildren(svg);
+  // Muestra un estado reconocible desde el primer instante, incluso antes
+  // de que el usuario inicie una comparación o llegue la primera respuesta.
+  renderFacelets(container, solvedFacelets());
 }
 
 async function fetchStateForMoves(moves) {
@@ -102,8 +167,11 @@ async function animateComparison(method, result, finished) {
     }
   }
   view.stage.textContent = "Terminado";
-  view.card.classList.add("finished");
+  view.card.classList.add("completed");
   finished.push(method);
+  if (finished.length === 1) {
+    view.card.classList.add("winner");
+  }
 }
 
 function renderComparisonSummary(results, finished) {
@@ -119,7 +187,7 @@ function renderComparisonSummary(results, finished) {
         `).join("")}
       </tbody>
     </table>
-    <p style="margin-top: 8px; font-size: 0.78rem;">Terminó primero: ${finished[0] === "thistle" ? "Thistlethwaite" : "CFOP"}</p>
+    <p>Terminó primero: ${finished[0] === "thistle" ? "Thistlethwaite" : "CFOP"}</p>
   `;
 }
 
@@ -129,7 +197,7 @@ async function compare() {
   showPanel("compare");
   document.querySelector("#compareSummary").textContent = "Resolviendo...";
   Object.values(comparison).forEach((view) => {
-    view.card.classList.remove("finished");
+    view.card.classList.remove("finished", "completed", "winner");
     view.stage.textContent = "Resolviendo...";
     view.count.textContent = "0";
   });
@@ -192,7 +260,7 @@ function renderFacelets(container, facelets) {
   const stickers = container.querySelectorAll(".sticker");
   stickers.forEach((sticker) => {
     const color = facelets[Number(sticker.dataset.index)];
-    sticker.className = `sticker ${faceNames[color] || ""}`;
+    sticker.setAttribute("class", `sticker ${faceNames[color] || ""}`);
   });
 }
 
@@ -289,7 +357,6 @@ function renderMoves() {
 
 function clearSolution() {
   solutionMoves = [];
-  solvePanel.hidden = true;
   phaseList.innerHTML = "";
   solveSummary.textContent = "";
   solutionMovesElement.textContent = "—";
@@ -305,9 +372,19 @@ function toNotation(move) {
   return move.endsWith("i") ? `${face}'` : face;
 }
 
+function updateStatus(message, statusClass = "status") {
+  const dot = document.createElement("span");
+  dot.className = "status-dot";
+  dot.setAttribute("aria-hidden", "true");
+  statusElement.className = statusClass;
+  statusElement.replaceChildren(dot, document.createTextNode(` ${message}`));
+}
+
 function setStatus(isLegal) {
-  statusElement.textContent = isLegal ? "✓ Estado legal" : "✕ Estado ilegal";
-  statusElement.className = isLegal ? "status" : "status invalid";
+  updateStatus(
+    isLegal ? "✓ Estado legal" : "✕ Estado ilegal",
+    isLegal ? "status" : "status invalid"
+  );
 }
 
 function setBusy(isBusy) {
@@ -327,7 +404,7 @@ function setBusy(isBusy) {
   });
 }
 
-// --- Control unificado de paneles ---
+// --- Control unificado de paneles (solo uno visible a la vez) ---
 function showPanel(name) {
   const panels = {
     solve: solvePanel,
@@ -342,17 +419,20 @@ function showPanel(name) {
     benchmark: benchmarkButton
   };
   Object.entries(panels).forEach(([key, panel]) => {
-    panel.hidden = key !== name;
+    const isActive = key === name;
+    panel.hidden = !isActive;
+    panel.setAttribute("aria-hidden", String(!isActive));
   });
   Object.entries(buttons).forEach(([key, button]) => {
-    button.classList.toggle("active", key === name);
+    const isActive = key === name;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
   });
 }
 
 async function updateState(manageBusy = true) {
   if (manageBusy) setBusy(true);
-  statusElement.textContent = "Actualizando...";
-  statusElement.className = "status";
+  updateStatus("Actualizando...");
   try {
     const query = encodeURIComponent(combinedMoves().join(","));
     const response = await fetch(`/api/state?moves=${query}`);
@@ -363,8 +443,7 @@ async function updateState(manageBusy = true) {
     renderMoves();
     return true;
   } catch (error) {
-    statusElement.textContent = error.message;
-    statusElement.className = "status error";
+    updateStatus(error.message, "status error");
     return false;
   } finally {
     if (manageBusy) setBusy(false);
@@ -385,8 +464,7 @@ async function scramble() {
     clearSolution();
     await updateState(false);
   } catch (error) {
-    statusElement.textContent = error.message;
-    statusElement.className = "status error";
+    updateStatus(error.message, "status error");
   } finally {
     setBusy(false);
   }
@@ -449,7 +527,7 @@ async function solve() {
         if (!await updateState(false)) {
           throw new Error("No se pudo actualizar el estado del cubo.");
         }
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 400));
       }
       phaseIndex += 1;
     }
@@ -459,8 +537,7 @@ async function solve() {
     solutionMovesElement.textContent = solveSummary.textContent;
   } catch (error) {
     solveSummary.textContent = error.message;
-    statusElement.textContent = error.message;
-    statusElement.className = "status error";
+    updateStatus(error.message, "status error");
   } finally {
     setBusy(false);
   }
@@ -485,9 +562,8 @@ function handleKey(event) {
 }
 
 createCube(cubeElement);
-Object.values(comparison).forEach((view) => createCube(view.cube));
+Object.values(comparison).forEach((view) => create3DCube(view.cube));
 createCube(validationCube);
-
 validationCube.querySelectorAll(".sticker").forEach((sticker) => {
   const index = Number(sticker.dataset.index);
   const center = index % 9 === 4;
@@ -500,25 +576,12 @@ validationCube.querySelectorAll(".sticker").forEach((sticker) => {
     });
   }
 });
-
 scrambleButton.addEventListener("click", scramble);
 resetButton.addEventListener("click", reset);
-solveButton.addEventListener("click", () => {
-  showPanel("solve");
-  if (solutionMoves.length === 0 && userMoves.length > 0) {
-    solve();
-  }
-});
+solveButton.addEventListener("click", solve);
 compareButton.addEventListener("click", compare);
 benchmarkButton.addEventListener("click", benchmark);
-validateTabButton.addEventListener("click", () => {
-  if (validatePanel.hidden) {
-    showPanel("validate");
-  } else {
-    showPanel("solve");
-  }
-});
-
+validateTabButton.addEventListener("click", () => showPanel("validate"));
 loadCurrentButton.addEventListener("click", loadCurrentCube);
 solvedValidationButton.addEventListener("click", () => {
   setValidationFacelets(solvedFacelets());
@@ -526,7 +589,6 @@ solvedValidationButton.addEventListener("click", () => {
   validationResult.className = "validation-result";
 });
 validateButton.addEventListener("click", validateCube);
-
 document.querySelectorAll(".demo-button").forEach((button) => {
   button.addEventListener("click", () => loadDemo(button.dataset.demoKind));
 });
@@ -534,7 +596,6 @@ intervalControl.addEventListener("input", () => {
   intervalValue.textContent = intervalControl.value;
 });
 document.addEventListener("keydown", handleKey);
-
 setValidationFacelets(solvedFacelets());
 showPanel("solve");
 solveSummary.textContent = 'Pulsa "Resolver" para calcular.';

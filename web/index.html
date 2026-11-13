@@ -3,45 +3,48 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10151b">
   <title>RubikLab · Estrategias de resolución</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="app">
     <header class="site-header">
-      <div>
-        <p class="eyebrow">RubikLab</p>
-        <h1>Laboratorio de estrategias de resolución</h1>
-        <p class="subtitle">Laboratorio de estrategias de resolución en Prolog</p>
+      <div class="brand-block">
+        <p class="eyebrow"><span class="brand-dot" aria-hidden="true"></span> RubikLab <span class="brand-divider">/</span> Prolog Lab</p>
+        <h1>Laboratorio de estrategias</h1>
+        <p class="subtitle">Explora, resuelve y compara métodos para el cubo de Rubik.</p>
       </div>
-      <p id="status" class="status" aria-live="polite"><span aria-hidden="true">●</span> Cargando...</p>
+      <p id="status" class="status" aria-live="polite"><span class="status-dot" aria-hidden="true"></span> Cargando...</p>
     </header>
 
-    <nav class="tabs" aria-label="Secciones">
-      <button id="solveButton" class="tab-button tab-primary" type="button">Resolver</button>
-      <button id="compareButton" class="tab-button" type="button">Comparar</button>
-      <button id="validateTabButton" class="tab-button" type="button">Validar</button>
-      <button id="benchmarkButton" class="tab-button" type="button">Benchmark</button>
+    <nav class="tabs" aria-label="Secciones principales">
+      <button id="solveButton" class="tab-button" type="button" aria-pressed="true"><span class="tab-icon" aria-hidden="true">⌁</span> Resolver</button>
+      <button id="compareButton" class="tab-button" type="button" aria-pressed="false"><span class="tab-icon" aria-hidden="true">⇄</span> Comparar</button>
+      <button id="validateTabButton" class="tab-button" type="button" aria-pressed="false"><span class="tab-icon" aria-hidden="true">✓</span> Validar</button>
+      <button id="benchmarkButton" class="tab-button" type="button" aria-pressed="false"><span class="tab-icon" aria-hidden="true">◷</span> Benchmark</button>
     </nav>
 
-    <section class="workspace-grid">
+    <section class="workspace-grid" aria-label="Área de trabajo">
       <div class="left-column">
-        <section class="card cube-card" aria-label="Cubo de Rubik desplegado">
+        <section class="card cube-card" aria-label="Estado actual del cubo">
           <div class="section-heading">
             <div>
-              <p class="section-kicker">Estado actual</p>
-              <h2>Cubo 3×3×3</h2>
+              <p class="section-kicker">Vista en directo</p>
+              <h2>Tu cubo</h2>
             </div>
-            <span class="cube-mark" aria-hidden="true">3×3</span>
+            <span class="cube-mark">3 × 3 × 3</span>
           </div>
-          <div id="cube" class="cube-net"></div>
-          <p class="keyboard-help">u r f d l b <span>·</span> Shift = inverso <span>·</span> 2 = doble</p>
+          <div class="cube-net-wrap">
+            <div id="cube" class="cube-net" aria-label="Despliegue del cubo actual"></div>
+          </div>
+          <p class="keyboard-help"><kbd>U</kbd> <kbd>R</kbd> <kbd>F</kbd> <kbd>D</kbd> <kbd>L</kbd> <kbd>B</kbd><span>Mayús: inverso</span><span><kbd>2</kbd>: doble giro</span></p>
         </section>
 
         <section class="card controls-card" aria-label="Controles del cubo">
           <div class="control-row">
-            <button id="scrambleButton" type="button">Scramble</button>
-            <button id="resetButton" type="button" class="secondary">Reset</button>
+            <button id="scrambleButton" type="button"><span aria-hidden="true">⤨</span> Mezclar</button>
+            <button id="resetButton" type="button" class="secondary"><span aria-hidden="true">↺</span> Reiniciar</button>
           </div>
           <label class="field-label" for="methodSelect">Método de resolución</label>
           <select id="methodSelect">
@@ -49,85 +52,95 @@
             <option value="cfop">CFOP</option>
           </select>
           <div class="moves-panel">
-            <p class="moves-line"><strong>Mezcla</strong> <span id="moves">Resuelto</span></p>
-            <p class="moves-line"><strong>Solución</strong> <span id="solutionMoves">—</span></p>
+            <p class="moves-line"><strong>Mezcla</strong><span id="moves">Resuelto</span></p>
+            <p class="moves-line"><strong>Solución</strong><span id="solutionMoves">—</span></p>
           </div>
           <span id="doubleIndicator" class="double-indicator" aria-live="polite"></span>
         </section>
       </div>
 
       <div class="right-column">
-        <section id="solvePanel" class="card solve-panel">
-          <div class="section-heading">
+        <section id="solvePanel" class="card workspace-panel solve-panel" aria-labelledby="solveHeading" hidden>
+          <div class="section-heading panel-heading">
             <div>
-              <p class="section-kicker">Resolver</p>
-              <h2>Solución y explicación</h2>
+              <p class="section-kicker">Resolución paso a paso</p>
+              <h2 id="solveHeading">Solución y explicación</h2>
             </div>
-            <p id="solveSummary" class="summary"></p>
+            <p id="solveSummary" class="summary">Pulsa «Resolver» para calcular.</p>
           </div>
           <div id="phaseList" class="phase-list"></div>
         </section>
 
-        <section id="comparePanel" class="card compare-panel" hidden>
-          <div class="section-heading">
+        <section id="comparePanel" class="card workspace-panel compare-panel" aria-labelledby="compareHeading" hidden>
+          <div class="section-heading panel-heading">
             <div>
-              <p class="section-kicker">Comparar</p>
-              <h2>Dos estrategias, un estado</h2>
+              <p class="section-kicker">Duelo de algoritmos</p>
+              <h2 id="compareHeading">Dos estrategias, un mismo estado</h2>
+              <p class="panel-description">Observa cómo cada método resuelve el cubo y compara sus resultados.</p>
             </div>
             <label class="range-label" for="intervalControl">
-              Intervalo <output id="intervalValue">400</output> ms
+              <span>Velocidad de animación <output id="intervalValue">400</output> ms</span>
               <input id="intervalControl" type="range" min="100" max="1000" step="50" value="400">
             </label>
           </div>
           <div class="comparison-cubes">
             <article class="comparison-method" id="compareThistle">
-              <div class="method-heading"><h3>Thistlethwaite</h3><span class="winner-badge">Terminó primero</span></div>
-              <div class="comparison-cube cube-net" id="thistleCube"></div>
+              <div class="method-heading"><h3>Thistlethwaite</h3><span class="winner-badge">Primero</span></div>
+              <div class="comparison-cube" id="thistleCube" aria-label="Cubo 3D de Thistlethwaite"></div>
               <p class="comparison-stage" id="thistleStage">Pendiente</p>
-              <p class="comparison-count"><span id="thistleCount">0</span> movimientos</p>
+              <p class="comparison-count"><strong id="thistleCount">0</strong><span> movimientos</span></p>
             </article>
             <article class="comparison-method" id="compareCfop">
-              <div class="method-heading"><h3>CFOP</h3><span class="winner-badge">Terminó primero</span></div>
-              <div class="comparison-cube cube-net" id="cfopCube"></div>
+              <div class="method-heading"><h3>CFOP</h3><span class="winner-badge">Primero</span></div>
+              <div class="comparison-cube" id="cfopCube" aria-label="Cubo 3D de CFOP"></div>
               <p class="comparison-stage" id="cfopStage">Pendiente</p>
-              <p class="comparison-count"><span id="cfopCount">0</span> movimientos</p>
+              <p class="comparison-count"><strong id="cfopCount">0</strong><span> movimientos</span></p>
             </article>
           </div>
-          <div id="compareSummary"></div>
+          <div id="compareSummary" class="results-area"></div>
         </section>
 
-        <section id="validatePanel" class="card validate-panel" hidden>
-          <div class="section-heading">
+        <section id="validatePanel" class="card workspace-panel validate-panel" aria-labelledby="validateHeading" hidden>
+          <div class="section-heading panel-heading">
             <div>
-              <p class="section-kicker">Validar</p>
-              <h2>Comprueba un estado</h2>
+              <p class="section-kicker">Comprobación de estado</p>
+              <h2 id="validateHeading">¿Es un cubo válido?</h2>
+              <p class="panel-description">Selecciona un sticker para cambiar su color y comprobar si el estado es alcanzable.</p>
             </div>
-            <span class="muted-label">Haz clic en un sticker para cambiarlo</span>
+            <span class="muted-label">Clic en una pieza para cambiarla</span>
           </div>
-          <div id="validationCube" class="cube-net editable-cube" aria-label="Cubo editable para validar"></div>
-          <div class="validation-actions">
-            <button id="loadCurrentButton" type="button" class="secondary">Cargar el cubo actual</button>
-            <button id="solvedValidationButton" type="button" class="secondary">Estado resuelto</button>
-            <button id="validateButton" type="button">Validar estado</button>
+          <div class="validation-layout">
+            <div id="validationCube" class="cube-net editable-cube" aria-label="Cubo editable para validar"></div>
+            <div class="validation-tools">
+              <div class="validation-actions">
+                <button id="loadCurrentButton" type="button" class="secondary">Cargar cubo actual</button>
+                <button id="solvedValidationButton" type="button" class="secondary">Estado resuelto</button>
+                <button id="validateButton" type="button">Validar estado <span aria-hidden="true">→</span></button>
+              </div>
+              <div class="demo-box">
+                <span class="muted-label">Probar ejemplos ilegales</span>
+                <div class="demo-actions">
+                  <button type="button" class="secondary demo-button" data-demo-kind="corner">Esquina torcida</button>
+                  <button type="button" class="secondary demo-button" data-demo-kind="edge">Arista volteada</button>
+                  <button type="button" class="secondary demo-button" data-demo-kind="swap">Esquinas intercambiadas</button>
+                </div>
+              </div>
+              <p id="validationResult" class="validation-result" aria-live="polite"></p>
+            </div>
           </div>
-          <div class="demo-actions">
-            <span class="muted-label">Ejemplos ilegales</span>
-            <button type="button" class="secondary demo-button" data-demo-kind="corner">Esquina torcida</button>
-            <button type="button" class="secondary demo-button" data-demo-kind="edge">Arista volteada</button>
-            <button type="button" class="secondary demo-button" data-demo-kind="swap">Esquinas intercambiadas</button>
-          </div>
-          <p id="validationResult" class="validation-result" aria-live="polite"></p>
         </section>
 
-        <section id="benchmarkPanel" class="card benchmark-panel" hidden>
-          <div class="section-heading">
+        <section id="benchmarkPanel" class="card workspace-panel benchmark-panel" aria-labelledby="benchmarkHeading" hidden>
+          <div class="section-heading panel-heading">
             <div>
-              <p class="section-kicker">Benchmark</p>
-              <h2>Rendimiento comparado</h2>
+              <p class="section-kicker">Prueba de rendimiento</p>
+              <h2 id="benchmarkHeading">Rendimiento comparado</h2>
+              <p class="panel-description">Promedios obtenidos al ejecutar un conjunto reproducible de pruebas.</p>
             </div>
+            <span class="benchmark-tag">10 ejecuciones · semilla 42</span>
           </div>
-          <p id="benchmarkStatus" class="benchmark-status"></p>
-          <div id="benchmarkTable"></div>
+          <p id="benchmarkStatus" class="benchmark-status" aria-live="polite"></p>
+          <div id="benchmarkTable" class="results-area"></div>
         </section>
       </div>
     </section>
