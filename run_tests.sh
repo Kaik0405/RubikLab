@@ -39,12 +39,18 @@ case "${1:-all}" in
   cfop)
     swipl -g 'set_test_options([format(log)]),run_tests' -t halt tests/test_cfop.pl
     ;;
+  explainer)
+    swipl -g 'set_test_options([format(log)]),run_tests' -t halt tests/test_explainer.pl
+    ;;
+  benchmark)
+    swipl -g 'set_test_options([format(log)]),run_tests' -t halt tests/test_benchmark.pl
+    ;;
   all)
     swipl -g 'set_test_options([format(log)]),run_tests' -t halt \
-      tests/test_cube.pl tests/test_moves.pl tests/test_validation.pl tests/test_facelets.pl tests/test_search.pl tests/test_tables.pl tests/test_thistle.pl tests/test_phase3.pl tests/test_phase4.pl tests/test_server.pl tests/test_oll_pll.pl tests/test_cfop.pl
+      tests/test_cube.pl tests/test_moves.pl tests/test_validation.pl tests/test_facelets.pl tests/test_search.pl tests/test_tables.pl tests/test_thistle.pl tests/test_phase3.pl tests/test_phase4.pl tests/test_server.pl tests/test_oll_pll.pl tests/test_cfop.pl tests/test_explainer.pl tests/test_benchmark.pl
     ;;
   *)
-    echo "Uso: $0 [all|cube|moves|validation|facelets|search|tables|thistle|phase3|phase4|server|oll_pll|cfop]" >&2
+    echo "Uso: $0 [all|cube|moves|validation|facelets|search|tables|thistle|phase3|phase4|server|oll_pll|cfop|explainer|benchmark]" >&2
     exit 1
     ;;
 esac
