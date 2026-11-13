@@ -35,8 +35,26 @@
             </div>
             <span class="cube-mark">3 × 3 × 3</span>
           </div>
-          <div class="cube-net-wrap">
-            <div id="cube" class="cube-net" aria-label="Despliegue del cubo actual"></div>
+          <div class="cube-view-stack">
+            <section class="cube-3d-block" aria-label="Vista tridimensional interactiva">
+              <div class="cube-3d-stage primary-stage">
+                <div class="cube-3d-scene drag-enabled" id="mainCubeScene" tabindex="0" role="group" aria-label="Arrastra para girar el cubo. También puedes usar las flechas del teclado.">
+                  <div id="mainCube3d" class="cube-3d primary-cube"></div>
+                </div>
+                <div class="cube-view-controls primary-view-controls" aria-label="Controles de perspectiva">
+                  <button class="view-control" type="button" data-cube="main" data-rotate="left" aria-label="Girar a la izquierda" title="Girar a la izquierda">↶</button>
+                  <button class="view-control" type="button" data-cube="main" data-rotate="right" aria-label="Girar a la derecha" title="Girar a la derecha">↷</button>
+                  <button class="view-control" type="button" data-cube="main" data-rotate="up" aria-label="Inclinar hacia arriba" title="Inclinar hacia arriba">↑</button>
+                  <button class="view-control" type="button" data-cube="main" data-rotate="down" aria-label="Inclinar hacia abajo" title="Inclinar hacia abajo">↓</button>
+                  <button class="view-control view-reset" type="button" data-cube="main" data-rotate="reset" aria-label="Restablecer perspectiva" title="Restablecer perspectiva">⟲</button>
+                </div>
+                <span class="drag-hint">Arrastra el cubo para cambiar la perspectiva</span>
+              </div>
+            </section>
+            <section class="cube-2d-block" aria-label="Despliegue bidimensional del cubo">
+              <div class="view-caption"><span>Vista 2D</span><span>Estado por caras</span></div>
+              <div id="cube" class="cube-net" aria-label="Despliegue del cubo actual"></div>
+            </section>
           </div>
           <p class="keyboard-help"><kbd>U</kbd> <kbd>R</kbd> <kbd>F</kbd> <kbd>D</kbd> <kbd>L</kbd> <kbd>B</kbd><span>Mayús: inverso</span><span><kbd>2</kbd>: doble giro</span></p>
         </section>
@@ -86,13 +104,43 @@
           <div class="comparison-cubes">
             <article class="comparison-method" id="compareThistle">
               <div class="method-heading"><h3>Thistlethwaite</h3><span class="winner-badge">Primero</span></div>
-              <div class="comparison-cube" id="thistleCube" aria-label="Cubo 3D de Thistlethwaite"></div>
+              <div class="comparison-visuals">
+                <div class="comparison-3d-wrap">
+                  <div class="cube-3d-scene compact-scene">
+                    <div id="thistleCube3d" class="cube-3d comparison-cube-3d"></div>
+                  </div>
+                  <div class="cube-view-controls compact-view-controls" aria-label="Cambiar perspectiva de Thistlethwaite">
+                    <button class="view-control" type="button" data-cube="thistle" data-rotate="left" aria-label="Girar Thistlethwaite a la izquierda">↶</button>
+                    <button class="view-control" type="button" data-cube="thistle" data-rotate="right" aria-label="Girar Thistlethwaite a la derecha">↷</button>
+                    <button class="view-control" type="button" data-cube="thistle" data-rotate="reset" aria-label="Restablecer Thistlethwaite">⟲</button>
+                  </div>
+                </div>
+                <div class="comparison-2d-wrap">
+                  <div class="view-caption compact-caption"><span>Vista 2D</span></div>
+                  <div class="comparison-cube cube-net cube-net-compact" id="thistleCube" aria-label="Despliegue 2D de Thistlethwaite"></div>
+                </div>
+              </div>
               <p class="comparison-stage" id="thistleStage">Pendiente</p>
               <p class="comparison-count"><strong id="thistleCount">0</strong><span> movimientos</span></p>
             </article>
             <article class="comparison-method" id="compareCfop">
               <div class="method-heading"><h3>CFOP</h3><span class="winner-badge">Primero</span></div>
-              <div class="comparison-cube" id="cfopCube" aria-label="Cubo 3D de CFOP"></div>
+              <div class="comparison-visuals">
+                <div class="comparison-3d-wrap">
+                  <div class="cube-3d-scene compact-scene">
+                    <div id="cfopCube3d" class="cube-3d comparison-cube-3d"></div>
+                  </div>
+                  <div class="cube-view-controls compact-view-controls" aria-label="Cambiar perspectiva de CFOP">
+                    <button class="view-control" type="button" data-cube="cfop" data-rotate="left" aria-label="Girar CFOP a la izquierda">↶</button>
+                    <button class="view-control" type="button" data-cube="cfop" data-rotate="right" aria-label="Girar CFOP a la derecha">↷</button>
+                    <button class="view-control" type="button" data-cube="cfop" data-rotate="reset" aria-label="Restablecer CFOP">⟲</button>
+                  </div>
+                </div>
+                <div class="comparison-2d-wrap">
+                  <div class="view-caption compact-caption"><span>Vista 2D</span></div>
+                  <div class="comparison-cube cube-net cube-net-compact" id="cfopCube" aria-label="Despliegue 2D de CFOP"></div>
+                </div>
+              </div>
               <p class="comparison-stage" id="cfopStage">Pendiente</p>
               <p class="comparison-count"><strong id="cfopCount">0</strong><span> movimientos</span></p>
             </article>

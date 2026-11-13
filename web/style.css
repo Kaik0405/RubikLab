@@ -192,8 +192,109 @@ h1 { margin-bottom: 4px; font-size: clamp(1.45rem, 2.5vw, 2rem); line-height: 1.
 .section-heading h2 { margin: 0; font-size: 1.13rem; letter-spacing: -0.035em; }
 .cube-mark { padding: 5px 8px; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.7rem; }
 
-.cube-card { display: flex; min-height: 0; flex-direction: column; overflow: hidden; }
-.cube-net-wrap { display: grid; min-height: 0; flex: 1 1 auto; place-items: center; }
+.cube-view-stack {
+  display: grid;
+  min-height: 0;
+  flex: 1 1 auto;
+  align-content: center;
+  justify-items: center;
+  gap: 5px;
+}
+.cube-3d-block, .cube-2d-block { width: 100%; min-width: 0; }
+.cube-3d-stage { display: grid; width: 100%; justify-items: center; gap: 0; }
+.primary-stage { padding-top: 1px; }
+.primary-stage .cube-3d-scene { height: 168px; }
+.cube-3d-scene {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 145px;
+  place-items: center;
+  perspective: 900px;
+  perspective-origin: 50% 48%;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.cube-3d-scene.is-dragging { cursor: grabbing; }
+.cube-3d {
+  --cube-size: 130px;
+  --cube-half: calc(var(--cube-size) / 2);
+  position: relative;
+  width: var(--cube-size);
+  height: var(--cube-size);
+  transform: rotateX(var(--rotate-x, -27deg)) rotateY(var(--rotate-y, -35deg));
+  transform-style: preserve-3d;
+  transition: transform 190ms cubic-bezier(.2,.7,.25,1);
+  /* No aplicar filter aquí: los filtros aplanan los hijos y rompen preserve-3d. */
+  filter: none;
+  transform-origin: center center;
+  will-change: transform;
+}
+.cube-3d-scene.is-dragging .cube-3d { transition: none; }
+.cube-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid #0b1219;
+  border-radius: 11px;
+  background: #101820;
+  backface-visibility: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.045), 0 5px 12px rgba(0,0,0,.22);
+}
+.cube-face--front { transform: translateZ(var(--cube-half)); }
+.cube-face--back { transform: rotateY(180deg) translateZ(var(--cube-half)); }
+.cube-face--right { transform: rotateY(90deg) translateZ(var(--cube-half)); }
+.cube-face--left { transform: rotateY(-90deg) translateZ(var(--cube-half)); }
+.cube-face--top { transform: rotateX(90deg) translateZ(var(--cube-half)); }
+.cube-face--bottom { transform: rotateX(-90deg) translateZ(var(--cube-half)); }
+.cube-face .sticker {
+  min-width: 0;
+  border: 1px solid rgba(0,0,0,.48);
+  border-radius: 4px;
+  box-shadow: inset 0 1px rgba(255,255,255,.2), 0 1px 1px rgba(0,0,0,.24);
+}
+.primary-cube { --cube-size: clamp(126px, 11.5vw, 146px); }
+.primary-view-controls, .compact-view-controls { display: flex; align-items: center; justify-content: center; gap: 5px; }
+.view-control {
+  display: inline-grid;
+  width: 27px;
+  min-width: 27px;
+  height: 25px;
+  min-height: 25px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: .9rem;
+  line-height: 1;
+}
+.view-control:hover { border-color: color-mix(in srgb, var(--accent) 65%, var(--border)); background: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); color: var(--accent-strong); }
+.view-control.view-reset { margin-left: 3px; color: var(--accent-strong); }
+.drag-hint { margin-top: 4px; color: var(--muted); font-size: .61rem; letter-spacing: .015em; }
+.view-caption {
+  display: flex;
+  width: min(100%, 178px);
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 auto;
+  color: var(--text);
+  font-size: .66rem;
+  font-weight: 800;
+  letter-spacing: .035em;
+}
+.view-caption span + span { color: var(--muted); font-size: .59rem; font-weight: 600; }
+.cube-2d-block .cube-net { width: min(100%, 168px); margin: 4px auto 0; }
+.cube-card .keyboard-help { margin-top: 5px; }
+
+.cube-card { display: flex; min-height: 0; flex-direction: column; }
 .cube-net {
   display: grid;
   width: min(100%, 330px);
@@ -261,50 +362,25 @@ select { width: 100%; min-height: 39px; padding: 0 12px; border: 1px solid var(-
 .range-label output { color: var(--text); font: 750 0.7rem ui-monospace, monospace; }
 .range-label input { width: 100%; accent-color: var(--accent); cursor: pointer; }
 .comparison-cubes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
-.comparison-method { display: grid; min-width: 0; grid-template-rows: auto minmax(160px, 1fr) auto auto; padding: 12px 14px; border: 1px solid var(--border); border-radius: 16px; background: linear-gradient(150deg, var(--surface-soft), color-mix(in srgb, var(--surface-raised) 70%, var(--surface))); transition: border-color 180ms ease, box-shadow 180ms ease; }
+.comparison-method { display: grid; min-width: 0; grid-template-rows: auto 1fr auto auto; align-content: start; padding: 12px 14px; border: 1px solid var(--border); border-radius: 16px; background: linear-gradient(150deg, var(--surface-soft), color-mix(in srgb, var(--surface-raised) 70%, var(--surface))); transition: border-color 180ms ease, box-shadow 180ms ease; }
 .comparison-method.completed { border-color: var(--accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent); }
 .method-heading { display: flex; min-height: 25px; align-items: center; justify-content: space-between; gap: 8px; }
 .method-heading h3 { margin: 0; font-size: 0.85rem; }
 .winner-badge { display: none; padding: 4px 8px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--accent) 14%, var(--surface)); color: var(--accent-strong); font-size: 0.62rem; font-weight: 850; }
 .comparison-method.winner .winner-badge { display: inline-flex; }
 
-/* Cubos isométricos SVG: renderizado estable sin depender de CSS 3D. */
-.comparison-cube { display: grid; min-height: 174px; place-items: center; overflow: visible; }
-.cube-3d-svg {
-  display: block;
-  width: min(100%, 238px);
-  height: auto;
-  max-height: 190px;
-  overflow: visible;
-  filter: drop-shadow(0 12px 10px rgba(0, 0, 0, 0.24));
-  transform: perspective(900px) rotateY(-3deg);
-  transform-origin: 50% 55%;
-  transition: transform 220ms ease, filter 220ms ease;
-}
-.comparison-method:hover .cube-3d-svg {
-  transform: perspective(900px) rotateY(3deg) translateY(-3px) scale(1.035);
-  filter: drop-shadow(0 16px 13px rgba(0, 0, 0, 0.3));
-}
-.cube-3d-svg .sticker {
-  stroke: #17212b;
-  stroke-width: 3.2;
-  stroke-linejoin: round;
-  paint-order: stroke;
-  transition: fill 160ms ease, filter 160ms ease;
-}
-.cube-3d-svg .sticker-u { fill: var(--white); }
-.cube-3d-svg .sticker-r { fill: var(--red); }
-.cube-3d-svg .sticker-f { fill: var(--green); }
-.cube-3d-svg .sticker-d { fill: var(--yellow); }
-.cube-3d-svg .sticker-l { fill: var(--orange); }
-.cube-3d-svg .sticker-b { fill: var(--blue); }
-.cube-face-outline {
-  fill: none;
-  stroke: #121b24;
-  stroke-width: 5;
-  stroke-linejoin: round;
-  pointer-events: none;
-}
+/* Las comparativas usan cubos 3D compactos y su despliegue 2D debajo. */
+.comparison-visuals { display: grid; grid-template-rows: auto auto; justify-items: center; gap: 2px; margin: 5px 0 7px; }
+.comparison-3d-wrap { display: grid; width: 100%; justify-items: center; gap: 0; }
+.compact-scene { height: 145px; cursor: default; touch-action: auto; perspective: 780px; }
+.comparison-cube-3d { --cube-size: 104px; }
+.compact-view-controls { gap: 4px; margin-top: -1px; }
+.compact-view-controls .view-control { width: 22px; min-width: 22px; height: 21px; min-height: 21px; border-radius: 6px; font-size: .76rem; }
+.comparison-2d-wrap { width: min(100%, 180px); }
+.compact-caption { width: min(100%, 165px); justify-content: flex-start; color: var(--muted); font-size: .6rem; }
+.cube-net-compact { width: min(100%, 158px); margin: 4px auto 0; gap: 2px; }
+.cube-net-compact .sticker { border-radius: 3px; }
+
 .comparison-stage { min-height: 30px; margin: 0 0 5px; color: var(--muted); font-size: 0.7rem; }
 .comparison-count { display: flex; align-items: baseline; gap: 5px; margin: 0; color: var(--muted); font-size: 0.7rem; }
 .comparison-count strong { color: var(--text); font: 800 1.05rem ui-monospace, SFMono-Regular, Consolas, monospace; }
@@ -350,8 +426,33 @@ body.is-loading .tab-button.active::after {
   .site-header { margin-bottom: 10px; }
   .tabs { margin-bottom: 10px; }
   .cube-card, .controls-card, .workspace-panel { padding: 13px; }
-  .comparison-cube { min-height: 140px; }
-  .comparison-method { grid-template-rows: auto minmax(140px, 1fr) auto auto; padding: 10px; }
+  .comparison-method { grid-template-rows: auto 1fr auto auto; padding: 10px; }
+  .compact-scene { height: 104px; }
+  .comparison-cube-3d { --cube-size: 76px; }
+}
+
+@media (max-height: 780px) and (min-width: 901px) {
+  .cube-3d-scene { height: 150px; }
+  .primary-stage .cube-3d-scene { height: 155px; }
+  .primary-cube { --cube-size: 128px; }
+  .cube-2d-block .cube-net { width: min(100%, 155px); }
+  .cube-view-stack { gap: 2px; }
+  .drag-hint { margin-top: 2px; }
+  .cube-card, .controls-card, .workspace-panel { padding: 13px; }
+}
+
+@media (max-height: 700px) and (min-width: 901px) {
+  .cube-3d-scene { height: 132px; }
+  .primary-stage .cube-3d-scene { height: 138px; }
+  .primary-cube { --cube-size: 110px; }
+  .cube-2d-block .cube-net { width: min(100%, 138px); }
+  .cube-view-stack { gap: 0; }
+  .keyboard-help { display: none; }
+  .controls-card { gap: 6px; }
+  .compact-scene { height: 108px; }
+  .comparison-cube-3d { --cube-size: 88px; }
+  .cube-net-compact { width: min(100%, 145px); }
+  .comparison-stage { min-height: 23px; }
 }
 
 @media (max-width: 900px) {
@@ -372,15 +473,22 @@ body.is-loading .tab-button.active::after {
   .tab-button { min-width: 0; flex-direction: column; gap: 3px; padding: 6px 3px; font-size: 0.67rem; }
   .tab-icon { font-size: 0.95rem; }
   .left-column { grid-template-columns: 1fr; }
-  .cube-card { min-height: 345px; }
+  .cube-card { min-height: 405px; }
+  .cube-3d-scene { height: 150px; }
+  .primary-stage .cube-3d-scene { height: 155px; }
+  .primary-cube { --cube-size: 126px; }
+  .cube-2d-block .cube-net { width: min(100%, 168px); }
   .controls-card { align-content: start; }
   .right-column { min-height: 420px; }
   .workspace-panel { min-height: 420px; padding: 14px; }
   .section-heading, .panel-heading { align-items: flex-start; flex-direction: column; }
   .summary { max-width: none; text-align: left; }
   .comparison-cubes { grid-template-columns: 1fr; }
-  .comparison-method { grid-template-rows: auto 160px auto auto; }
-  .comparison-cube { min-height: 160px; }
+  .comparison-method { grid-template-rows: auto 1fr auto auto; }
+  .compact-scene { height: 138px; }
+  .comparison-cube-3d { --cube-size: 102px; }
+  .cube-net-compact { width: min(100%, 158px); }
+  .comparison-visuals { grid-template-rows: auto auto; }
   .validation-layout { grid-template-columns: 1fr; gap: 12px; }
   .editable-cube { width: min(100%, 310px); }
   .range-label { width: 100%; min-width: 0; text-align: left; }
