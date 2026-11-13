@@ -27,6 +27,7 @@ const validateButton = document.querySelector("#validateButton");
 const validationResult = document.querySelector("#validationResult");
 const intervalControl = document.querySelector("#intervalControl");
 const intervalValue = document.querySelector("#intervalValue");
+
 const comparison = {
   thistle: {
     cube: document.querySelector("#thistleCube"),
@@ -49,25 +50,21 @@ let requestInProgress = false;
 let validationFacelets = [];
 
 const faceLayout = [
-  { face: "u", start: 0, column: 4, row: 1 },
-  { face: "r", start: 9, column: 7, row: 4 },
-  { face: "f", start: 18, column: 4, row: 4 },
-  { face: "d", start: 27, column: 4, row: 7 },
-  { face: "l", start: 36, column: 1, row: 4 },
+  { face: "u", start: 0,  column: 4,  row: 1 },
+  { face: "r", start: 9,  column: 7,  row: 4 },
+  { face: "f", start: 18, column: 4,  row: 4 },
+  { face: "d", start: 27, column: 4,  row: 7 },
+  { face: "l", start: 36, column: 1,  row: 4 },
   { face: "b", start: 45, column: 10, row: 4 }
 ];
 
 const faceNames = {
-  U: "sticker-u",
-  R: "sticker-r",
-  F: "sticker-f",
-  D: "sticker-d",
-  L: "sticker-l",
-  B: "sticker-b"
+  U: "sticker-u", R: "sticker-r", F: "sticker-f",
+  D: "sticker-d", L: "sticker-l", B: "sticker-b"
 };
 
-// Construye la rejilla fija de 54 stickers en forma de cruz.
 function createCube(container) {
+  container.classList.add("cube-net");
   faceLayout.forEach((face) => {
     for (let index = 0; index < 9; index += 1) {
       const sticker = document.createElement("div");
@@ -122,20 +119,19 @@ function renderComparisonSummary(results, finished) {
         `).join("")}
       </tbody>
     </table>
-    <p>Terminó primero: ${finished[0] === "thistle" ? "Thistlethwaite" : "CFOP"}</p>
+    <p style="margin-top: 8px; font-size: 0.78rem;">Terminó primero: ${finished[0] === "thistle" ? "Thistlethwaite" : "CFOP"}</p>
   `;
 }
 
 async function compare() {
-  if (requestInProgress) {
-    return;
-  }
+  if (requestInProgress) return;
   setBusy(true);
-  comparePanel.hidden = false;
+  showPanel("compare");
   document.querySelector("#compareSummary").textContent = "Resolviendo...";
   Object.values(comparison).forEach((view) => {
     view.card.classList.remove("finished");
     view.stage.textContent = "Resolviendo...";
+    view.count.textContent = "0";
   });
   try {
     const query = encodeURIComponent(userMoves.join(","));
@@ -172,11 +168,9 @@ function renderBenchmark(summaries) {
 }
 
 async function benchmark() {
-  if (requestInProgress) {
-    return;
-  }
+  if (requestInProgress) return;
   setBusy(true);
-  benchmarkPanel.hidden = false;
+  showPanel("benchmark");
   benchmarkStatus.textContent = "Tarda unos segundos...";
   benchmarkTable.innerHTML = "";
   try {
@@ -194,7 +188,6 @@ async function benchmark() {
   }
 }
 
-// Pinta los stickers según la cadena U, R, F, D, L, B recibida del backend.
 function renderFacelets(container, facelets) {
   const stickers = container.querySelectorAll(".sticker");
   stickers.forEach((sticker) => {
@@ -229,9 +222,7 @@ function showValidationResult(valid, reason) {
 }
 
 async function validateCube() {
-  if (requestInProgress) {
-    return;
-  }
+  if (requestInProgress) return;
   setBusy(true);
   try {
     const facelets = encodeURIComponent(validationFacelets.join(""));
@@ -250,9 +241,7 @@ async function validateCube() {
 }
 
 async function loadCurrentCube() {
-  if (requestInProgress) {
-    return;
-  }
+  if (requestInProgress) return;
   setBusy(true);
   try {
     const state = await fetchStateForMoves(combinedMoves());
@@ -268,9 +257,7 @@ async function loadCurrentCube() {
 }
 
 async function loadDemo(kind) {
-  if (requestInProgress) {
-    return;
-  }
+  if (requestInProgress) return;
   setBusy(true);
   try {
     const response = await fetch(`/api/demo_illegal?kind=${kind}`);
@@ -289,7 +276,6 @@ async function loadDemo(kind) {
   }
 }
 
-// Actualiza la lista visible usando la notación estándar del cubo.
 function renderMoves() {
   movesElement.textContent = userMoves.length
     ? userMoves.map(toNotation).join(" ")
@@ -315,9 +301,7 @@ function combinedMoves() {
 
 function toNotation(move) {
   const face = move[0].toUpperCase();
-  if (move.endsWith("2")) {
-    return `${face}2`;
-  }
+  if (move.endsWith("2")) return `${face}2`;
   return move.endsWith("i") ? `${face}'` : face;
 }
 
@@ -343,19 +327,36 @@ function setBusy(isBusy) {
   });
 }
 
-// Solicita al backend el estado correspondiente a la lista de movimientos.
+// --- Control unificado de paneles ---
+function showPanel(name) {
+  const panels = {
+    solve: solvePanel,
+    compare: comparePanel,
+    validate: validatePanel,
+    benchmark: benchmarkPanel
+  };
+  const buttons = {
+    solve: solveButton,
+    compare: compareButton,
+    validate: validateTabButton,
+    benchmark: benchmarkButton
+  };
+  Object.entries(panels).forEach(([key, panel]) => {
+    panel.hidden = key !== name;
+  });
+  Object.entries(buttons).forEach(([key, button]) => {
+    button.classList.toggle("active", key === name);
+  });
+}
+
 async function updateState(manageBusy = true) {
-  if (manageBusy) {
-    setBusy(true);
-  }
+  if (manageBusy) setBusy(true);
   statusElement.textContent = "Actualizando...";
   statusElement.className = "status";
   try {
     const query = encodeURIComponent(combinedMoves().join(","));
     const response = await fetch(`/api/state?moves=${query}`);
-    if (!response.ok) {
-      throw new Error("No se pudo obtener el estado.");
-    }
+    if (!response.ok) throw new Error("No se pudo obtener el estado.");
     const state = await response.json();
     renderFacelets(cubeElement, state.facelets);
     setStatus(state.legal);
@@ -366,25 +367,19 @@ async function updateState(manageBusy = true) {
     statusElement.className = "status error";
     return false;
   } finally {
-    if (manageBusy) {
-      setBusy(false);
-    }
+    if (manageBusy) setBusy(false);
   }
 }
 
 async function scramble() {
-  if (requestInProgress) {
-    return;
-  }
+  if (requestInProgress) return;
   userMoves = [];
   solutionMoves = [];
   clearSolution();
   setBusy(true);
   try {
     const response = await fetch("/api/scramble?n=25");
-    if (!response.ok) {
-      throw new Error("No se pudo generar la mezcla.");
-    }
+    if (!response.ok) throw new Error("No se pudo generar la mezcla.");
     const result = await response.json();
     userMoves = result.moves;
     clearSolution();
@@ -398,9 +393,7 @@ async function scramble() {
 }
 
 async function reset() {
-  if (requestInProgress) {
-    return;
-  }
+  if (requestInProgress) return;
   userMoves = [];
   solutionMoves = [];
   clearSolution();
@@ -431,30 +424,22 @@ function setActivePhase(index) {
 }
 
 function responseError(result, status) {
-  if (status === 422 && result.reason) {
-    return `Estado ilegal: ${result.reason}`;
-  }
-  if (status === 400) {
-    return result.error || "Movimiento inválido.";
-  }
+  if (status === 422 && result.reason) return `Estado ilegal: ${result.reason}`;
+  if (status === 400) return result.error || "Movimiento inválido.";
   return result.error || "No se pudo resolver.";
 }
 
 async function solve() {
-  if (requestInProgress) {
-    return;
-  }
+  if (requestInProgress) return;
   clearSolution();
   setBusy(true);
-  solvePanel.hidden = false;
+  showPanel("solve");
   solveSummary.textContent = "Calculando...";
   try {
     const query = encodeURIComponent(userMoves.join(","));
     const response = await fetch(`/api/solve?method=${methodSelect.value}&moves=${query}`);
     const result = await response.json();
-    if (!response.ok) {
-      throw new Error(responseError(result, response.status));
-    }
+    if (!response.ok) throw new Error(responseError(result, response.status));
     renderSolution(result.steps);
     let phaseIndex = 0;
     for (const phase of result.steps) {
@@ -464,7 +449,7 @@ async function solve() {
         if (!await updateState(false)) {
           throw new Error("No se pudo actualizar el estado del cubo.");
         }
-        await new Promise((resolve) => setTimeout(resolve, 400));
+        await new Promise((resolve) => setTimeout(resolve, 300));
       }
       phaseIndex += 1;
     }
@@ -489,9 +474,7 @@ function handleKey(event) {
     event.preventDefault();
     return;
   }
-  if (!"urfdlb".includes(key) || requestInProgress) {
-    return;
-  }
+  if (!"urfdlb".includes(key) || requestInProgress) return;
   clearSolution();
   const suffix = doubleMovePending ? "2" : event.shiftKey ? "i" : "";
   userMoves.push(`${key}${suffix}`);
@@ -504,6 +487,7 @@ function handleKey(event) {
 createCube(cubeElement);
 Object.values(comparison).forEach((view) => createCube(view.cube));
 createCube(validationCube);
+
 validationCube.querySelectorAll(".sticker").forEach((sticker) => {
   const index = Number(sticker.dataset.index);
   const center = index % 9 === 4;
@@ -516,14 +500,25 @@ validationCube.querySelectorAll(".sticker").forEach((sticker) => {
     });
   }
 });
+
 scrambleButton.addEventListener("click", scramble);
 resetButton.addEventListener("click", reset);
-solveButton.addEventListener("click", solve);
+solveButton.addEventListener("click", () => {
+  showPanel("solve");
+  if (solutionMoves.length === 0 && userMoves.length > 0) {
+    solve();
+  }
+});
 compareButton.addEventListener("click", compare);
 benchmarkButton.addEventListener("click", benchmark);
 validateTabButton.addEventListener("click", () => {
-  validatePanel.hidden = !validatePanel.hidden;
+  if (validatePanel.hidden) {
+    showPanel("validate");
+  } else {
+    showPanel("solve");
+  }
 });
+
 loadCurrentButton.addEventListener("click", loadCurrentCube);
 solvedValidationButton.addEventListener("click", () => {
   setValidationFacelets(solvedFacelets());
@@ -531,6 +526,7 @@ solvedValidationButton.addEventListener("click", () => {
   validationResult.className = "validation-result";
 });
 validateButton.addEventListener("click", validateCube);
+
 document.querySelectorAll(".demo-button").forEach((button) => {
   button.addEventListener("click", () => loadDemo(button.dataset.demoKind));
 });
@@ -538,5 +534,8 @@ intervalControl.addEventListener("input", () => {
   intervalValue.textContent = intervalControl.value;
 });
 document.addEventListener("keydown", handleKey);
+
 setValidationFacelets(solvedFacelets());
+showPanel("solve");
+solveSummary.textContent = 'Pulsa "Resolver" para calcular.';
 updateState();
