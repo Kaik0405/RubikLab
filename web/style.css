@@ -41,6 +41,20 @@ button:disabled {
   opacity: 0.6;
 }
 
+select,
+input {
+  accent-color: var(--accent);
+  font: inherit;
+}
+
+select {
+  padding: 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+}
+
 .app {
   width: min(920px, calc(100% - 32px));
   margin: 0 auto;
@@ -202,6 +216,67 @@ h2 {
   font-weight: 700;
 }
 
+.compare-panel {
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.compare-controls,
+.comparison-cubes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.comparison-cubes {
+  align-items: flex-start;
+}
+
+.comparison-method {
+  flex: 1;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.comparison-method.finished {
+  border-color: var(--accent);
+}
+
+.comparison-cube {
+  overflow-x: auto;
+  padding: 8px 0;
+}
+
+.comparison-cube .cube-net {
+  --sticker-size: min(3vw, 28px);
+  margin: 0;
+}
+
+.comparison-stage {
+  min-height: 42px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.compare-summary-table {
+  width: 100%;
+  margin-top: 20px;
+  border-collapse: collapse;
+}
+
+.compare-summary-table th,
+.compare-summary-table td {
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
 @media (max-width: 560px) {
   :root {
     --sticker-size: min(7vw, 36px);
@@ -219,5 +294,12 @@ h2 {
   .phase {
     grid-template-columns: 1fr;
     gap: 4px;
+  }
+
+  .controls,
+  .comparison-cubes,
+  .compare-controls {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

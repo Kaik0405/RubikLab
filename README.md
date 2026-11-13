@@ -40,9 +40,11 @@ All cube logic lives in Prolog. The web interface is a framework-free client tha
 | Move utilities | Inverse of a move or sequence, random scrambles | Done |
 | State validation | Detects unreachable states and explains why | Done |
 | Solver A | Four-phase Thistlethwaite approach with IDA* and pruning tables | Done |
-| Solver B | CFOP: cross and F2L via IDA*, OLL/PLL via a verified algorithm catalog | Planned |
+| Solver B | CFOP: cross and F2L via IDA*, OLL/PLL via a verified algorithm catalog | Done |
+| Explainer | Meta-interpreter that reports the rule used by each solving stage | Done |
+| Benchmark | Reproducible comparison of both solvers | Done |
 | Solver response | Reports phases, moves, nodes and execution time | Done |
-| Web UI | 2D cube, keyboard controls, scramble and animated solving | Done |
+| Web UI | 2D cube, keyboard controls, solve, compare and benchmark views | Done |
 
 The solver measured **31.65 moves on average** over 20 scrambles of 25 moves,
 with a minimum of 27 and a maximum of 36.
@@ -67,6 +69,10 @@ rubiklab/
 │   ├── search.pl       # Generic IDA* with node counting
 │   ├── tables.pl       # Pruning tables
 │   ├── thistle.pl      # Solver A
+│   ├── cfop.pl         # Solver B
+│   ├── oll_pll.pl      # OLL and PLL catalog
+│   ├── explainer.pl    # Solver rule explanations
+│   ├── benchmark.pl    # Comparative benchmark
 │   └── server.pl       # HTTP API and static web server
 ├── tests/              # plunit test suites, one per module
 ├── web/                # index.html, style.css, app.js
@@ -84,7 +90,10 @@ facelets    -> cube
 tables      -> cube, moves
 search      -> cube, moves
 thistle     -> search, tables, cube, moves
-server      -> thistle, facelets, validation, moves, cube
+cfop        -> search, cube, moves, oll_pll
+explainer   -> thistle, cfop
+benchmark   -> thistle, cfop, cube, moves
+server      -> thistle, cfop, explainer, benchmark, facelets, validation, moves, cube
 ```
 
 ## Cube Representation
@@ -196,7 +205,9 @@ endpoints:
 | `GET /api/scramble?n=25` | Generates a scramble with `n` valid moves. |
 | `GET /api/state?moves=r,u,ri` | Applies moves and returns the facelets and state legality. |
 | `GET /api/validate?facelets=...` | Validates a 54-sticker facelet string. |
-| `GET /api/solve?moves=r,u,f` | Solves the state and returns all four phases with metrics. |
+| `GET /api/solve?method=thistle&moves=r,u,f` | Solves the state and returns explained steps with metrics. |
+| `GET /api/compare?moves=r,u,f` | Solves the same state with both methods. |
+| `GET /api/benchmark?n=10&seed=42` | Compares both methods on reproducible scrambles. |
 
 Unknown moves return HTTP `400`. Illegal cube states return HTTP `422` from
 the solve endpoint. Successful solve responses include the total move count,
@@ -215,7 +226,8 @@ Move tables are easy to get subtly wrong, and a single bad index corrupts everyt
 - Any random scramble followed by its inverse returns the solved cube.
 - Facelet conversion, legality reasons and invalid configurations are tested.
 - IDA* pruning, phase coordinates and all four solver phases are tested.
-- The HTTP solver response is tested without requiring a running server.
+- Both solver responses are tested without requiring a running server.
+- Explainer and benchmark behavior are tested with fixed seeds.
 
 Move tables were also cross-checked against Kociemba's reference implementation.
 
@@ -228,12 +240,16 @@ Move tables were also cross-checked against Kociemba's reference implementation.
 - [x] Facelet conversion and a minimal 2D viewer
 - [x] Generic IDA* with pruning and node counting
 - [x] Solver A: Thistlethwaite phases with pruning tables
-- [ ] Solver B: CFOP (cross, F2L, OLL, PLL)
-- [ ] Explainer via meta-interpreter
-- [ ] Benchmark comparing both solvers
+- [x] Solver B: CFOP (cross, F2L, OLL, PLL)
+- [x] Explainer via meta-interpreter
+- [x] Benchmark comparing both solvers
 - [x] HTTP API and framework-free 2D web interface
 
 OLL and PLL are planned in their full form (57 + 21 cases), with a 2-look subset as a fallback. Every algorithm is checked automatically against the cube model.
+
+### Benchmark results
+
+<!-- Pegar aquí la tabla de resultados del benchmark cuando esté disponible. -->
 
 ## Tech Stack
 

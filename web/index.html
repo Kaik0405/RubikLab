@@ -19,7 +19,14 @@
     <section class="controls" aria-label="Controles del cubo">
       <button id="scrambleButton" type="button">Scramble</button>
       <button id="resetButton" type="button" class="secondary">Reset</button>
+      <label for="methodSelect">Método</label>
+      <select id="methodSelect">
+        <option value="thistle">Thistlethwaite</option>
+        <option value="cfop">CFOP</option>
+      </select>
       <button id="solveButton" type="button">Solve</button>
+      <button id="compareButton" type="button" class="secondary">Comparar</button>
+      <button id="benchmarkButton" type="button" class="secondary">Benchmark</button>
       <span id="doubleIndicator" class="double-indicator" aria-live="polite"></span>
     </section>
 
@@ -37,6 +44,35 @@
       <h2>Solución</h2>
       <div id="phaseList"></div>
       <p id="solveSummary"></p>
+    </section>
+
+    <section id="comparePanel" class="compare-panel" hidden>
+      <div class="compare-controls">
+        <h2>Comparación</h2>
+        <label for="intervalControl">Intervalo: <output id="intervalValue">400</output> ms</label>
+        <input id="intervalControl" type="range" min="100" max="1000" step="50" value="400">
+      </div>
+      <div class="comparison-cubes">
+        <article class="comparison-method" id="compareThistle">
+          <h3>Thistlethwaite</h3>
+          <div class="comparison-cube" id="thistleCube"></div>
+          <p class="comparison-stage" id="thistleStage">Pendiente</p>
+          <p><span id="thistleCount">0</span> movimientos</p>
+        </article>
+        <article class="comparison-method" id="compareCfop">
+          <h3>CFOP</h3>
+          <div class="comparison-cube" id="cfopCube"></div>
+          <p class="comparison-stage" id="cfopStage">Pendiente</p>
+          <p><span id="cfopCount">0</span> movimientos</p>
+        </article>
+      </div>
+      <div id="compareSummary"></div>
+    </section>
+
+    <section id="benchmarkPanel" class="solve-panel" hidden>
+      <h2>Benchmark</h2>
+      <p id="benchmarkStatus"></p>
+      <div id="benchmarkTable"></div>
     </section>
 
   </main>

@@ -8,9 +8,32 @@ const doubleIndicator = document.querySelector("#doubleIndicator");
 const scrambleButton = document.querySelector("#scrambleButton");
 const resetButton = document.querySelector("#resetButton");
 const solveButton = document.querySelector("#solveButton");
+const compareButton = document.querySelector("#compareButton");
+const benchmarkButton = document.querySelector("#benchmarkButton");
+const methodSelect = document.querySelector("#methodSelect");
 const solvePanel = document.querySelector("#solvePanel");
 const phaseList = document.querySelector("#phaseList");
 const solveSummary = document.querySelector("#solveSummary");
+const comparePanel = document.querySelector("#comparePanel");
+const benchmarkPanel = document.querySelector("#benchmarkPanel");
+const benchmarkStatus = document.querySelector("#benchmarkStatus");
+const benchmarkTable = document.querySelector("#benchmarkTable");
+const intervalControl = document.querySelector("#intervalControl");
+const intervalValue = document.querySelector("#intervalValue");
+const comparison = {
+  thistle: {
+    cube: document.querySelector("#thistleCube"),
+    stage: document.querySelector("#thistleStage"),
+    count: document.querySelector("#thistleCount"),
+    card: document.querySelector("#compareThistle")
+  },
+  cfop: {
+    cube: document.querySelector("#cfopCube"),
+    stage: document.querySelector("#cfopStage"),
+    count: document.querySelector("#cfopCount"),
+    card: document.querySelector("#compareCfop")
+  }
+};
 
 let userMoves = [];
 let solutionMoves = [];
@@ -36,7 +59,7 @@ const faceNames = {
 };
 
 // Construye la rejilla fija de 54 stickers en forma de cruz.
-function createCube() {
+function createCube(container) {
   faceLayout.forEach((face) => {
     for (let index = 0; index < 9; index += 1) {
       const sticker = document.createElement("div");
@@ -44,14 +67,128 @@ function createCube() {
       sticker.dataset.index = String(face.start + index);
       sticker.style.gridColumn = String(face.column + (index % 3));
       sticker.style.gridRow = String(face.row + Math.floor(index / 3));
-      cubeElement.appendChild(sticker);
+      container.appendChild(sticker);
     }
   });
 }
 
+async function fetchStateForMoves(moves) {
+  const query = encodeURIComponent(moves.join(","));
+  const response = await fetch(`/api/state?moves=${query}`);
+  if (!response.ok) {
+    throw new Error("No se pudo obtener el estado de la comparación.");
+  }
+  return response.json();
+}
+
+async function animateComparison(method, result, finished) {
+  const view = comparison[method];
+  const moves = [];
+  renderFacelets(view.cube, (await fetchStateForMoves(userMoves)).facelets);
+  view.count.textContent = "0";
+  for (const step of result.steps) {
+    view.stage.textContent = `${step.stage}: ${step.rule}`;
+    for (const move of step.moves) {
+      moves.push(move);
+      const state = await fetchStateForMoves(userMoves.concat(moves));
+      renderFacelets(view.cube, state.facelets);
+      view.count.textContent = String(moves.length);
+      await new Promise((resolve) => setTimeout(resolve, Number(intervalControl.value)));
+    }
+  }
+  view.stage.textContent = "Terminado";
+  view.card.classList.add("finished");
+  finished.push(method);
+}
+
+function renderComparisonSummary(results, finished) {
+  const summary = document.querySelector("#compareSummary");
+  summary.innerHTML = `
+    <table class="compare-summary-table">
+      <thead><tr><th>Método</th><th>Movimientos</th><th>Nodos</th><th>Segundos</th></tr></thead>
+      <tbody>
+        ${["thistle", "cfop"].map((method) => `
+          <tr><td>${method === "thistle" ? "Thistlethwaite" : "CFOP"}</td>
+          <td>${results[method].total_moves}</td><td>${results[method].nodes}</td>
+          <td>${Number(results[method].seconds).toFixed(4)}</td></tr>
+        `).join("")}
+      </tbody>
+    </table>
+    <p>Terminó primero: ${finished[0] === "thistle" ? "Thistlethwaite" : "CFOP"}</p>
+  `;
+}
+
+async function compare() {
+  if (requestInProgress) {
+    return;
+  }
+  setBusy(true);
+  comparePanel.hidden = false;
+  document.querySelector("#compareSummary").textContent = "Resolviendo...";
+  Object.values(comparison).forEach((view) => {
+    view.card.classList.remove("finished");
+    view.stage.textContent = "Resolviendo...";
+  });
+  try {
+    const query = encodeURIComponent(userMoves.join(","));
+    const response = await fetch(`/api/compare?moves=${query}`);
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(responseError(result, response.status));
+    }
+    const finished = [];
+    await Promise.all([
+      animateComparison("thistle", result.thistle, finished),
+      animateComparison("cfop", result.cfop, finished)
+    ]);
+    renderComparisonSummary(result, finished);
+  } catch (error) {
+    document.querySelector("#compareSummary").textContent = error.message;
+  } finally {
+    setBusy(false);
+  }
+}
+
+function renderBenchmark(summaries) {
+  benchmarkTable.innerHTML = `
+    <table class="compare-summary-table">
+      <thead><tr><th>Método</th><th>Movimientos</th><th>Nodos</th><th>Tiempo (s)</th></tr></thead>
+      <tbody>${summaries.map((summary) => `
+        <tr><td>${summary.method}</td>
+        <td>${Number(summary.mean_moves).toFixed(2)} / ${summary.min_moves} / ${summary.max_moves}</td>
+        <td>${Number(summary.mean_nodes).toFixed(2)}</td>
+        <td>${Number(summary.mean_seconds).toFixed(4)} / ${Number(summary.max_seconds).toFixed(4)}</td></tr>
+      `).join("")}</tbody>
+    </table>
+  `;
+}
+
+async function benchmark() {
+  if (requestInProgress) {
+    return;
+  }
+  setBusy(true);
+  benchmarkPanel.hidden = false;
+  benchmarkStatus.textContent = "Tarda unos segundos...";
+  benchmarkTable.innerHTML = "";
+  try {
+    const response = await fetch("/api/benchmark?n=10&seed=42");
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(responseError(result, response.status));
+    }
+    renderBenchmark(result.summary);
+    benchmarkStatus.textContent = "Benchmark completado.";
+  } catch (error) {
+    benchmarkStatus.textContent = error.message;
+  } finally {
+    setBusy(false);
+  }
+}
+
 // Pinta los stickers según la cadena U, R, F, D, L, B recibida del backend.
-function renderFacelets(facelets) {
-  const stickers = cubeElement.querySelectorAll(".sticker");
+function renderFacelets(container, facelets) {
+  const stickers = container.querySelectorAll(".sticker");
   stickers.forEach((sticker) => {
     const color = facelets[Number(sticker.dataset.index)];
     sticker.className = `sticker ${faceNames[color] || ""}`;
@@ -100,6 +237,8 @@ function setBusy(isBusy) {
   scrambleButton.disabled = isBusy;
   resetButton.disabled = isBusy;
   solveButton.disabled = isBusy;
+  compareButton.disabled = isBusy;
+  benchmarkButton.disabled = isBusy;
 }
 
 // Solicita al backend el estado correspondiente a la lista de movimientos.
@@ -116,7 +255,7 @@ async function updateState(manageBusy = true) {
       throw new Error("No se pudo obtener el estado.");
     }
     const state = await response.json();
-    renderFacelets(state.facelets);
+    renderFacelets(cubeElement, state.facelets);
     setStatus(state.legal);
     renderMoves();
     return true;
@@ -174,7 +313,8 @@ function renderSolution(phases) {
     item.className = "phase";
     item.dataset.phase = String(index);
     item.innerHTML = `
-      <strong>${phase.name}</strong>
+      <strong>${phase.stage || phase.name}</strong>
+      <span>${phase.rule || ""}</span>
       <span class="phase-moves">${phase.moves.map(toNotation).join(" ") || "—"}</span>
       <span>${phase.nodes} nodos · ${Number(phase.seconds).toFixed(4)} s</span>
     `;
@@ -208,14 +348,14 @@ async function solve() {
   solveSummary.textContent = "Calculando...";
   try {
     const query = encodeURIComponent(userMoves.join(","));
-    const response = await fetch(`/api/solve?moves=${query}`);
+    const response = await fetch(`/api/solve?method=${methodSelect.value}&moves=${query}`);
     const result = await response.json();
     if (!response.ok) {
       throw new Error(responseError(result, response.status));
     }
-    renderSolution(result.phases);
+    renderSolution(result.steps);
     let phaseIndex = 0;
-    for (const phase of result.phases) {
+    for (const phase of result.steps) {
       setActivePhase(phaseIndex);
       for (const move of phase.moves) {
         solutionMoves.push(move);
@@ -259,9 +399,15 @@ function handleKey(event) {
   event.preventDefault();
 }
 
-createCube();
+createCube(cubeElement);
+Object.values(comparison).forEach((view) => createCube(view.cube));
 scrambleButton.addEventListener("click", scramble);
 resetButton.addEventListener("click", reset);
 solveButton.addEventListener("click", solve);
+compareButton.addEventListener("click", compare);
+benchmarkButton.addEventListener("click", benchmark);
+intervalControl.addEventListener("input", () => {
+  intervalValue.textContent = intervalControl.value;
+});
 document.addEventListener("keydown", handleKey);
 updateState();

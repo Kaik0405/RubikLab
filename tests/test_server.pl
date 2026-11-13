@@ -23,6 +23,23 @@ test(illegal_state_returns_error) :-
     solve_response(state(CP, [Twisted|Rest], EP, EO), Dict),
     get_dict(error, Dict, "illegal_state").
 
+test(method_responses_solve_both_methods, [forall(between(1, 3, _))]) :-
+    random_scramble(25, Scramble),
+    solved(Solved),
+    apply_sequence(Scramble, Solved, State),
+    method_response(thistle, State, Thistle),
+    method_response(cfop, State, Cfop),
+    check_method_response(Thistle, 4, State, Solved),
+    check_method_response(Cfop, 7, State, Solved).
+
+check_method_response(Response, ExpectedSteps, State, Solved) :-
+    get_dict(steps, Response, Steps),
+    length(Steps, ExpectedSteps),
+    findall(Moves, (member(Step, Steps), get_dict(moves, Step, Moves)),
+            MoveLists),
+    append(MoveLists, AllMoves),
+    apply_sequence(AllMoves, State, Solved).
+
 solve_sample :-
     random_scramble(25, Scramble),
     solved(Solved),
