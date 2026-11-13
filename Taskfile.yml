@@ -12,12 +12,12 @@ tasks:
   test:
     desc: Ejecutar todas las suites de pruebas de Prolog
     cmds:
-      - '{{.SWIPL}} -g "set_test_options([format(log)]),run_tests" -t halt tests/test_cube.pl tests/test_moves.pl tests/test_validation.pl tests/test_facelets.pl tests/test_search.pl tests/test_tables.pl tests/test_thistle.pl tests/test_phase3.pl tests/test_phase4.pl tests/test_server.pl'
+      - '{{.SWIPL}} -g "set_test_options([format(log)]),run_tests" -t halt tests/test_cube.pl tests/test_moves.pl tests/test_validation.pl tests/test_facelets.pl tests/test_search.pl tests/test_tables.pl tests/test_thistle.pl tests/test_phase3.pl tests/test_phase4.pl tests/test_server.pl tests/test_oll_pll.pl tests/test_cfop.pl'
 
   test:verbose:
     desc: Ejecutar todas las suites de pruebas de Prolog con salida detallada
     cmds:
-      - '{{.SWIPL}} -s tests/test_cube.pl -s tests/test_moves.pl -s tests/test_validation.pl -s tests/test_facelets.pl -s tests/test_search.pl -s tests/test_tables.pl -s tests/test_thistle.pl -s tests/test_phase3.pl -s tests/test_phase4.pl -s tests/test_server.pl -g "run_tests,halt"'
+      - '{{.SWIPL}} -s tests/test_cube.pl -s tests/test_moves.pl -s tests/test_validation.pl -s tests/test_facelets.pl -s tests/test_search.pl -s tests/test_tables.pl -s tests/test_thistle.pl -s tests/test_phase3.pl -s tests/test_phase4.pl -s tests/test_server.pl -s tests/test_oll_pll.pl -s tests/test_cfop.pl -g "run_tests,halt"'
 
   test:cube:
     desc: Ejecutar las pruebas del cubo
@@ -63,6 +63,16 @@ tasks:
     desc: Ejecutar las pruebas de la fase 4
     cmds:
       - '{{.SWIPL}} -g "set_test_options([format(log)]),run_tests" -t halt tests/test_phase4.pl'
+
+  test:oll_pll:
+    desc: Ejecutar las pruebas de oll y pll
+    cmds:
+      - '{{.SWIPL}} -g "set_test_options([format(log)]),run_tests" -t halt tests/test_oll_pll.pl'
+
+  test:cfop:
+    desc: Ejecutar las pruebas de CFOP
+    cmds:
+      - '{{.SWIPL}} -g "set_test_options([format(log)]),run_tests" -t halt tests/test_cfop.pl'
 
   test:server:
     desc: Ejecutar las pruebas puras del servidor

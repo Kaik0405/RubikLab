@@ -23,9 +23,13 @@
       <span id="doubleIndicator" class="double-indicator" aria-live="polite"></span>
     </section>
 
-    <section class="moves-panel" aria-label="Scramble aplicado">
-      <h2>Scramble</h2>
-      <p id="moves" class="moves-list">Resuelto</p>
+    <section class="cube-panel" aria-label="Cubo de Rubik desplegado">
+      <div id="cube" class="cube-net"></div>
+    </section>
+
+    <section class="moves-panel" aria-label="Movimientos del cubo">
+      <p class="moves-line"><strong>Movimientos:</strong> <span id="moves">Resuelto</span></p>
+      <p class="moves-line"><strong>Solución:</strong> <span id="solutionMoves">—</span></p>
       <p class="help">U R F D L B giran · Shift invierte · 2 aplica doble giro</p>
     </section>
 
@@ -35,9 +39,6 @@
       <p id="solveSummary"></p>
     </section>
 
-    <section class="cube-panel" aria-label="Cubo de Rubik desplegado">
-      <div id="cube" class="cube-net"></div>
-    </section>
   </main>
   <script src="app.js"></script>
 </body>

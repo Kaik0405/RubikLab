@@ -2,6 +2,7 @@
 
 const cubeElement = document.querySelector("#cube");
 const movesElement = document.querySelector("#moves");
+const solutionMovesElement = document.querySelector("#solutionMoves");
 const statusElement = document.querySelector("#status");
 const doubleIndicator = document.querySelector("#doubleIndicator");
 const scrambleButton = document.querySelector("#scrambleButton");
@@ -11,7 +12,8 @@ const solvePanel = document.querySelector("#solvePanel");
 const phaseList = document.querySelector("#phaseList");
 const solveSummary = document.querySelector("#solveSummary");
 
-let appliedMoves = [];
+let userMoves = [];
+let solutionMoves = [];
 let doubleMovePending = false;
 let requestInProgress = false;
 
@@ -58,9 +60,26 @@ function renderFacelets(facelets) {
 
 // Actualiza la lista visible usando la notación estándar del cubo.
 function renderMoves() {
-  movesElement.textContent = appliedMoves.length
-    ? appliedMoves.map(toNotation).join(" ")
+  movesElement.textContent = userMoves.length
+    ? userMoves.map(toNotation).join(" ")
     : "Resuelto";
+  if (!solutionMovesElement.textContent.startsWith("Resuelto en")) {
+    solutionMovesElement.textContent = solutionMoves.length
+      ? solutionMoves.map(toNotation).join(" ")
+      : "—";
+  }
+}
+
+function clearSolution() {
+  solutionMoves = [];
+  solvePanel.hidden = true;
+  phaseList.innerHTML = "";
+  solveSummary.textContent = "";
+  solutionMovesElement.textContent = "—";
+}
+
+function combinedMoves() {
+  return userMoves.concat(solutionMoves);
 }
 
 function toNotation(move) {
@@ -91,7 +110,7 @@ async function updateState(manageBusy = true) {
   statusElement.textContent = "Actualizando...";
   statusElement.className = "status";
   try {
-    const query = encodeURIComponent(appliedMoves.join(","));
+    const query = encodeURIComponent(combinedMoves().join(","));
     const response = await fetch(`/api/state?moves=${query}`);
     if (!response.ok) {
       throw new Error("No se pudo obtener el estado.");
@@ -116,6 +135,9 @@ async function scramble() {
   if (requestInProgress) {
     return;
   }
+  userMoves = [];
+  solutionMoves = [];
+  clearSolution();
   setBusy(true);
   try {
     const response = await fetch("/api/scramble?n=25");
@@ -123,7 +145,8 @@ async function scramble() {
       throw new Error("No se pudo generar la mezcla.");
     }
     const result = await response.json();
-    appliedMoves = result.moves;
+    userMoves = result.moves;
+    clearSolution();
     await updateState(false);
   } catch (error) {
     statusElement.textContent = error.message;
@@ -137,7 +160,9 @@ async function reset() {
   if (requestInProgress) {
     return;
   }
-  appliedMoves = [];
+  userMoves = [];
+  solutionMoves = [];
+  clearSolution();
   await updateState();
 }
 
@@ -177,11 +202,12 @@ async function solve() {
   if (requestInProgress) {
     return;
   }
+  clearSolution();
   setBusy(true);
   solvePanel.hidden = false;
   solveSummary.textContent = "Calculando...";
   try {
-    const query = encodeURIComponent(appliedMoves.join(","));
+    const query = encodeURIComponent(userMoves.join(","));
     const response = await fetch(`/api/solve?moves=${query}`);
     const result = await response.json();
     if (!response.ok) {
@@ -192,7 +218,7 @@ async function solve() {
     for (const phase of result.phases) {
       setActivePhase(phaseIndex);
       for (const move of phase.moves) {
-        appliedMoves.push(move);
+        solutionMoves.push(move);
         if (!await updateState(false)) {
           throw new Error("No se pudo actualizar el estado del cubo.");
         }
@@ -201,7 +227,9 @@ async function solve() {
       phaseIndex += 1;
     }
     setActivePhase(-1);
+    userMoves = [];
     solveSummary.textContent = `Resuelto en ${result.total_moves} movimientos`;
+    solutionMovesElement.textContent = solveSummary.textContent;
   } catch (error) {
     solveSummary.textContent = error.message;
     statusElement.textContent = error.message;
@@ -222,8 +250,9 @@ function handleKey(event) {
   if (!"urfdlb".includes(key) || requestInProgress) {
     return;
   }
+  clearSolution();
   const suffix = doubleMovePending ? "2" : event.shiftKey ? "i" : "";
-  appliedMoves.push(`${key}${suffix}`);
+  userMoves.push(`${key}${suffix}`);
   doubleMovePending = false;
   doubleIndicator.textContent = "";
   updateState();

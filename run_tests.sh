@@ -33,12 +33,18 @@ case "${1:-all}" in
   server)
     swipl -g 'set_test_options([format(log)]),run_tests' -t halt tests/test_server.pl
     ;;
+  oll_pll)
+    swipl -g 'set_test_options([format(log)]),run_tests' -t halt tests/test_oll_pll.pl
+    ;;
+  cfop)
+    swipl -g 'set_test_options([format(log)]),run_tests' -t halt tests/test_cfop.pl
+    ;;
   all)
     swipl -g 'set_test_options([format(log)]),run_tests' -t halt \
-      tests/test_cube.pl tests/test_moves.pl tests/test_validation.pl tests/test_facelets.pl tests/test_search.pl tests/test_tables.pl tests/test_thistle.pl tests/test_phase3.pl tests/test_phase4.pl tests/test_server.pl
+      tests/test_cube.pl tests/test_moves.pl tests/test_validation.pl tests/test_facelets.pl tests/test_search.pl tests/test_tables.pl tests/test_thistle.pl tests/test_phase3.pl tests/test_phase4.pl tests/test_server.pl tests/test_oll_pll.pl tests/test_cfop.pl
     ;;
   *)
-    echo "Uso: $0 [all|cube|moves|validation|facelets|search|tables|thistle|phase3|phase4|server]" >&2
+    echo "Uso: $0 [all|cube|moves|validation|facelets|search|tables|thistle|phase3|phase4|server|oll_pll|cfop]" >&2
     exit 1
     ;;
 esac
