@@ -386,37 +386,261 @@ async function compare() {
     setBusy(false);
   }
 }
-
-function renderBenchmark(summaries) {
+function createBenchmarkView() {
   benchmarkTable.innerHTML = `
-    <table class="compare-summary-table">
-      <thead>
-        <tr>
-          <th>Método</th>
-          <th>Movimientos</th>
-          <th>Nodos</th>
-          <th>Tiempo (s)</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${summaries.map((summary) => `
-          <tr>
-            <td>${summary.method}</td>
-            <td>
-              ${Number(summary.mean_moves).toFixed(2)}
-              / ${summary.min_moves}
-              / ${summary.max_moves}
-            </td>
-            <td>${Number(summary.mean_nodes).toFixed(2)}</td>
-            <td>
-              ${Number(summary.mean_seconds).toFixed(4)}
-              / ${Number(summary.max_seconds).toFixed(4)}
-            </td>
-          </tr>
-        `).join("")}
-      </tbody>
-    </table>
+    <section class="benchmark-dashboard">
+      <div class="benchmark-overview">
+        <div class="benchmark-progress-copy">
+          <span class="benchmark-eyebrow">EJECUCIÓN EN DIRECTO</span>
+          <strong id="benchmarkProgressTitle">Preparando pruebas...</strong>
+          <span id="benchmarkProgressText">Los dos métodos resolverán las mismas mezclas.</span>
+        </div>
+        <div class="benchmark-progress-track">
+          <span id="benchmarkProgressBar"></span>
+        </div>
+      </div>
+
+      <div class="benchmark-live-grid">
+        <article class="benchmark-method benchmark-thistle" id="benchmarkThistle">
+          <header class="benchmark-method-heading">
+            <div>
+              <span class="benchmark-method-kicker">MÉTODO 01</span>
+              <h3>Thistlethwaite</h3>
+            </div>
+            <span class="benchmark-live-state" id="benchmarkThistleState">En espera</span>
+          </header>
+          <div class="benchmark-cube-stage">
+            <div class="benchmark-cube-net cube-net" id="benchmarkThistleCube" aria-label="Cubo Thistlethwaite"></div>
+          </div>
+          <div class="benchmark-scramble">
+            <span>MEZCLA ACTUAL</span>
+            <p id="benchmarkThistleScramble">Esperando mezcla...</p>
+          </div>
+          <div class="benchmark-solution">
+            <div class="benchmark-solution-heading">
+              <span>MOVIMIENTOS EJECUTADOS</span>
+              <strong id="benchmarkThistleCount">0</strong>
+            </div>
+            <p id="benchmarkThistleMoves">—</p>
+          </div>
+          <div class="benchmark-phase">
+            <div class="benchmark-phase-heading">
+              <span id="benchmarkThistleStage">Fase pendiente</span>
+              <span id="benchmarkThistlePercent">0%</span>
+            </div>
+            <div class="benchmark-phase-track"><span id="benchmarkThistleBar"></span></div>
+          </div>
+        </article>
+
+        <article class="benchmark-method benchmark-cfop" id="benchmarkCfop">
+          <header class="benchmark-method-heading">
+            <div>
+              <span class="benchmark-method-kicker">MÉTODO 02</span>
+              <h3>CFOP</h3>
+            </div>
+            <span class="benchmark-live-state" id="benchmarkCfopState">En espera</span>
+          </header>
+          <div class="benchmark-cube-stage">
+            <div class="benchmark-cube-net cube-net" id="benchmarkCfopCube" aria-label="Cubo CFOP"></div>
+          </div>
+          <div class="benchmark-scramble">
+            <span>MEZCLA ACTUAL</span>
+            <p id="benchmarkCfopScramble">Esperando mezcla...</p>
+          </div>
+          <div class="benchmark-solution">
+            <div class="benchmark-solution-heading">
+              <span>MOVIMIENTOS EJECUTADOS</span>
+              <strong id="benchmarkCfopCount">0</strong>
+            </div>
+            <p id="benchmarkCfopMoves">—</p>
+          </div>
+          <div class="benchmark-phase">
+            <div class="benchmark-phase-heading">
+              <span id="benchmarkCfopStage">Fase pendiente</span>
+              <span id="benchmarkCfopPercent">0%</span>
+            </div>
+            <div class="benchmark-phase-track"><span id="benchmarkCfopBar"></span></div>
+          </div>
+        </article>
+      </div>
+
+      <div class="benchmark-results">
+        <div class="benchmark-results-heading">
+          <div>
+            <span class="benchmark-eyebrow">ANÁLISIS</span>
+            <h3>Rendimiento acumulado</h3>
+          </div>
+          <span class="benchmark-results-count" id="benchmarkResultsCount">0 / 10 pruebas</span>
+        </div>
+        <div class="benchmark-metric-grid" id="benchmarkMetricGrid">
+          <div class="benchmark-empty">Las métricas aparecerán a medida que se completen las pruebas.</div>
+        </div>
+        <div class="benchmark-history-wrap">
+          <div class="benchmark-history-heading">
+            <strong>Historial de pruebas</strong>
+            <span>Movimientos por mezcla</span>
+          </div>
+          <div class="benchmark-history" id="benchmarkHistory">
+            <span class="benchmark-empty">Esperando la primera prueba...</span>
+          </div>
+        </div>
+      </div>
+    </section>
   `;
+
+  const thistleCube = document.querySelector("#benchmarkThistleCube");
+  const cfopCube = document.querySelector("#benchmarkCfopCube");
+  createCube(thistleCube);
+  createCube(cfopCube);
+
+  return {
+    thistle: benchmarkMethodView("Thistle"),
+    cfop: benchmarkMethodView("Cfop")
+  };
+}
+
+function benchmarkMethodView(prefix) {
+  return {
+    card: document.querySelector(`#benchmark${prefix}`),
+    cube: document.querySelector(`#benchmark${prefix}Cube`),
+    state: document.querySelector(`#benchmark${prefix}State`),
+    scramble: document.querySelector(`#benchmark${prefix}Scramble`),
+    count: document.querySelector(`#benchmark${prefix}Count`),
+    moves: document.querySelector(`#benchmark${prefix}Moves`),
+    stage: document.querySelector(`#benchmark${prefix}Stage`),
+    percent: document.querySelector(`#benchmark${prefix}Percent`),
+    bar: document.querySelector(`#benchmark${prefix}Bar`)
+  };
+}
+
+function benchmarkSetProgress(completed, total, message) {
+  const title = document.querySelector("#benchmarkProgressTitle");
+  const text = document.querySelector("#benchmarkProgressText");
+  const bar = document.querySelector("#benchmarkProgressBar");
+
+  title.textContent = `Prueba ${Math.min(completed + 1, total)} de ${total}`;
+  text.textContent = message;
+  bar.style.width = `${(completed / total) * 100}%`;
+  document.querySelector("#benchmarkResultsCount").textContent =
+    `${completed} / ${total} pruebas`;
+}
+
+function benchmarkRenderMetrics(rows) {
+  const grid = document.querySelector("#benchmarkMetricGrid");
+  if (!rows.length) return;
+
+  const metrics = ["thistle", "cfop"].map((method) => {
+    const values = rows.map((row) => row[method]);
+    const average = (key) =>
+      values.reduce((sum, item) => sum + Number(item[key]), 0) / values.length;
+
+    return {
+      method,
+      moves: average("total_moves"),
+      nodes: average("nodes"),
+      seconds: average("seconds")
+    };
+  });
+
+  const fastest = metrics.reduce((a, b) => a.seconds <= b.seconds ? a : b);
+  const fewestMoves = metrics.reduce((a, b) => a.moves <= b.moves ? a : b);
+  const fewestNodes = metrics.reduce((a, b) => a.nodes <= b.nodes ? a : b);
+
+  grid.innerHTML = metrics.map((metric) => `
+    <article class="benchmark-metric-card ${metric.method}">
+      <span>${metric.method === "thistle" ? "THISTLETHWAITE" : "CFOP"}</span>
+      <div class="benchmark-metric-values">
+        <div><strong>${metric.moves.toFixed(2)}</strong><small>movimientos medios</small></div>
+        <div><strong>${Math.round(metric.nodes).toLocaleString("es-ES")}</strong><small>nodos medios</small></div>
+        <div><strong>${metric.seconds.toFixed(4)} s</strong><small>tiempo medio</small></div>
+      </div>
+    </article>
+  `).join("");
+
+  const note = document.createElement("p");
+  note.className = "benchmark-winners";
+  note.textContent =
+    `Más rápido: ${fastest.method === "thistle" ? "Thistlethwaite" : "CFOP"} · ` +
+    `Menos movimientos: ${fewestMoves.method === "thistle" ? "Thistlethwaite" : "CFOP"} · ` +
+    `Menos nodos: ${fewestNodes.method === "thistle" ? "Thistlethwaite" : "CFOP"}`;
+  grid.appendChild(note);
+}
+
+function benchmarkRenderHistory(rows) {
+  const history = document.querySelector("#benchmarkHistory");
+  history.innerHTML = rows.map((row, index) => {
+    const t = row.thistle.total_moves;
+    const c = row.cfop.total_moves;
+    const max = Math.max(t, c, 1);
+    return `
+      <div class="benchmark-history-row">
+        <span class="benchmark-history-index">${String(index + 1).padStart(2, "0")}</span>
+        <div class="benchmark-history-bars">
+          <div class="benchmark-history-bar-line">
+            <span>TH</span><i><b style="width:${(t / max) * 100}%"></b></i><strong>${t}</strong>
+          </div>
+          <div class="benchmark-history-bar-line">
+            <span>CF</span><i><b style="width:${(c / max) * 100}%"></b></i><strong>${c}</strong>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function animateBenchmarkMethod(method, result, scrambleMoves, view) {
+  const allMoves = [];
+  const totalMoves = Number(result.total_moves) || 0;
+  let executed = 0;
+
+  view.card.classList.remove("completed", "winner");
+  view.state.textContent = "Resolviendo";
+  view.scramble.textContent = scrambleMoves.map(toNotation).join(" ");
+  view.moves.textContent = "—";
+  view.count.textContent = "0";
+  view.bar.style.width = "0%";
+  view.percent.textContent = "0%";
+
+  const initialState = await fetchStateForMoves(scrambleMoves);
+  renderFacelets(view.cube, initialState.facelets);
+
+  for (const step of result.steps) {
+    view.stage.textContent = step.stage || step.name || "Resolviendo";
+    const phaseMoves = step.moves || [];
+
+    for (const move of phaseMoves) {
+      allMoves.push(move);
+      executed += 1;
+
+      const state = await fetchStateForMoves(scrambleMoves.concat(allMoves));
+      renderFacelets(view.cube, state.facelets);
+
+      view.count.textContent = String(executed);
+      view.moves.textContent = allMoves.map(toNotation).join(" ");
+      const progress = totalMoves ? Math.min(100, (executed / totalMoves) * 100) : 100;
+      view.bar.style.width = `${progress}%`;
+      view.percent.textContent = `${Math.round(progress)}%`;
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.max(90, Number(intervalControl.value) || 180))
+      );
+    }
+  }
+
+  view.stage.textContent = "Cubo resuelto";
+  view.state.textContent = "Completado";
+  view.bar.style.width = "100%";
+  view.percent.textContent = "100%";
+  view.card.classList.add("completed");
+}
+
+function benchmarkNormalizeResult(result) {
+  return {
+    total_moves: Number(result.total_moves),
+    nodes: Number(result.nodes),
+    seconds: Number(result.seconds),
+    steps: result.steps || []
+  };
 }
 
 async function benchmark() {
@@ -424,28 +648,70 @@ async function benchmark() {
 
   setBusy(true);
   showPanel("benchmark");
-
-  benchmarkStatus.textContent = "Tarda unos segundos...";
+  benchmarkStatus.textContent = "Preparando el benchmark visual...";
   benchmarkTable.innerHTML = "";
+  const benchmarkTag = benchmarkPanel.querySelector(".benchmark-tag");
+  if (benchmarkTag) benchmarkTag.textContent = "10 ejecuciones · mezclas compartidas";
+
+  const totalTests = 10;
+  const rows = [];
+  const views = createBenchmarkView();
 
   try {
-    const response = await fetch("/api/benchmark?n=10&seed=42");
-    const result = await response.json();
+    for (let index = 0; index < totalTests; index += 1) {
+      benchmarkSetProgress(index, totalTests, "Generando una mezcla compartida para ambos métodos...");
 
-    if (!response.ok) {
-      throw new Error(responseError(result, response.status));
+      const scrambleResponse = await fetch("/api/scramble?n=25");
+      const scrambleResult = await scrambleResponse.json();
+      if (!scrambleResponse.ok) {
+        throw new Error(scrambleResult.error || "No se pudo generar la mezcla.");
+      }
+
+      const scrambleMoves = scrambleResult.moves;
+      const query = encodeURIComponent(scrambleMoves.join(","));
+      const compareResponse = await fetch(`/api/compare?moves=${query}`);
+      const compareResult = await compareResponse.json();
+
+      if (!compareResponse.ok) {
+        throw new Error(responseError(compareResult, compareResponse.status));
+      }
+
+      const thistle = benchmarkNormalizeResult(compareResult.thistle);
+      const cfop = benchmarkNormalizeResult(compareResult.cfop);
+
+      views.thistle.scramble.textContent = scrambleMoves.map(toNotation).join(" ");
+      views.cfop.scramble.textContent = scrambleMoves.map(toNotation).join(" ");
+
+      benchmarkSetProgress(index, totalTests,
+        `Mezcla ${index + 1}: animando las soluciones de Thistlethwaite y CFOP.`);
+
+      await Promise.all([
+        animateBenchmarkMethod("thistle", thistle, scrambleMoves, views.thistle),
+        animateBenchmarkMethod("cfop", cfop, scrambleMoves, views.cfop)
+      ]);
+
+      rows.push({ thistle, cfop });
+      benchmarkRenderMetrics(rows);
+      benchmarkRenderHistory(rows);
+
+      benchmarkSetProgress(index + 1, totalTests,
+        index + 1 === totalTests
+          ? "Todas las mezclas se han resuelto."
+          : `Prueba ${index + 1} completada. Preparando la siguiente mezcla...`);
     }
 
-    renderBenchmark(result.summary);
-
-    benchmarkStatus.textContent = "Benchmark completado.";
+    const progressBar = document.querySelector("#benchmarkProgressBar");
+    progressBar.style.width = "100%";
+    document.querySelector("#benchmarkProgressTitle").textContent = "Benchmark completado";
+    benchmarkStatus.textContent = "Benchmark completado. Ambos métodos resolvieron las mismas 10 mezclas.";
   } catch (error) {
     benchmarkStatus.textContent = error.message;
+    const title = document.querySelector("#benchmarkProgressTitle");
+    if (title) title.textContent = "Benchmark interrumpido";
   } finally {
     setBusy(false);
   }
 }
-
 function renderFacelets(container, facelets) {
   const stickers = container.querySelectorAll(".sticker");
 

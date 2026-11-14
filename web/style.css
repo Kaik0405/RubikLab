@@ -502,3 +502,138 @@ body.is-loading .tab-button.active::after {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+
+/* ------------------------------------------------------------------
+   Benchmark visual en directo
+------------------------------------------------------------------- */
+.benchmark-dashboard { display: grid; gap: 16px; }
+.benchmark-overview, .benchmark-results {
+  padding: 14px 15px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: linear-gradient(145deg, var(--surface-soft), color-mix(in srgb, var(--surface-raised) 55%, var(--surface)));
+}
+.benchmark-progress-copy { display: grid; gap: 4px; }
+.benchmark-eyebrow, .benchmark-method-kicker {
+  color: var(--accent);
+  font-size: .61rem;
+  font-weight: 850;
+  letter-spacing: .11em;
+}
+.benchmark-progress-copy strong { font-size: .95rem; }
+.benchmark-progress-copy > span:last-child { color: var(--muted); font-size: .7rem; }
+.benchmark-progress-track, .benchmark-phase-track {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--surface-raised);
+}
+.benchmark-progress-track { margin-top: 12px; }
+.benchmark-progress-track span, .benchmark-phase-track span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 180ms ease;
+}
+.benchmark-live-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+.benchmark-method {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: linear-gradient(155deg, var(--surface-soft), color-mix(in srgb, var(--surface-raised) 62%, var(--surface)));
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+.benchmark-method.completed { border-color: var(--accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent); }
+.benchmark-method-heading, .benchmark-solution-heading, .benchmark-phase-heading, .benchmark-results-heading, .benchmark-history-heading {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.benchmark-method-heading h3, .benchmark-results-heading h3 { margin: 2px 0 0; font-size: .92rem; }
+.benchmark-live-state { padding: 4px 8px; border: 1px solid var(--border); border-radius: 99px; color: var(--muted); font-size: .61rem; white-space: nowrap; }
+.benchmark-method.completed .benchmark-live-state { border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent); }
+.benchmark-cube-stage { display: grid; min-height: 180px; place-items: center; padding: 10px; border: 1px solid var(--border); border-radius: 12px; background: radial-gradient(ellipse at center, color-mix(in srgb, var(--surface-raised) 75%, transparent), transparent 72%); }
+.benchmark-cube-net { width: min(100%, 190px); aspect-ratio: 4 / 3; gap: 3px; }
+.benchmark-cube-net .sticker { border-radius: 4px; transition: background-color 120ms ease; }
+.benchmark-scramble, .benchmark-solution { min-width: 0; padding: 9px 10px; border-radius: 10px; background: var(--surface-soft); }
+.benchmark-scramble > span, .benchmark-solution-heading > span { color: var(--muted); font-size: .58rem; font-weight: 850; letter-spacing: .07em; }
+.benchmark-scramble p, .benchmark-solution p { max-height: 54px; overflow: auto; margin: 5px 0 0; color: var(--text); font: .67rem/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; overflow-wrap: anywhere; scrollbar-width: thin; }
+.benchmark-solution-heading strong { color: var(--accent); font: 800 .8rem ui-monospace, monospace; }
+.benchmark-phase { display: grid; gap: 6px; }
+.benchmark-phase-heading { color: var(--muted); font-size: .65rem; }
+.benchmark-phase-heading span:last-child { font-family: ui-monospace, monospace; }
+.benchmark-phase-track { height: 4px; }
+.benchmark-cfop .benchmark-phase-track span { background: #78a9f5; }
+.benchmark-results { display: grid; gap: 12px; }
+.benchmark-results-count { color: var(--muted); font-size: .67rem; }
+.benchmark-metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.benchmark-metric-card { padding: 11px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-soft); }
+.benchmark-metric-card > span { color: var(--accent); font-size: .61rem; font-weight: 850; letter-spacing: .08em; }
+.benchmark-metric-card.cfop > span { color: #78a9f5; }
+.benchmark-metric-values { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 9px; }
+.benchmark-metric-values div { display: grid; gap: 3px; min-width: 0; }
+.benchmark-metric-values strong { font: 800 .86rem ui-monospace, monospace; overflow-wrap: anywhere; }
+.benchmark-metric-values small { color: var(--muted); font-size: .57rem; line-height: 1.3; }
+.benchmark-winners { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: .68rem; }
+.benchmark-history-wrap { display: grid; gap: 9px; padding-top: 10px; border-top: 1px solid var(--border); }
+.benchmark-history-heading strong { font-size: .75rem; }
+.benchmark-history-heading span { color: var(--muted); font-size: .62rem; }
+.benchmark-history { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.benchmark-history-row { display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-soft); }
+.benchmark-history-index { color: var(--muted); font: 800 .68rem ui-monospace, monospace; }
+.benchmark-history-bars { display: grid; flex: 1; gap: 4px; min-width: 0; }
+.benchmark-history-bar-line { display: grid; grid-template-columns: 18px minmax(0, 1fr) 25px; align-items: center; gap: 5px; font: .58rem ui-monospace, monospace; }
+.benchmark-history-bar-line > span { color: var(--muted); }
+.benchmark-history-bar-line i { display: block; height: 4px; overflow: hidden; border-radius: 99px; background: var(--surface-raised); }
+.benchmark-history-bar-line b { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+.benchmark-history-bar-line:nth-child(2) b { background: #78a9f5; }
+.benchmark-history-bar-line strong { text-align: right; font-weight: 700; }
+.benchmark-empty { grid-column: 1 / -1; color: var(--muted); font-size: .68rem; }
+@media (max-width: 720px) {
+  .benchmark-live-grid, .benchmark-metric-grid { grid-template-columns: 1fr; }
+  .benchmark-cube-stage { min-height: 165px; }
+  .benchmark-history { grid-template-columns: 1fr; }
+}
+/* =========================================================
+   FIX: LOS CONTROLES DE ROTACIÓN SIEMPRE POR ENCIMA DEL CUBO
+   ========================================================= */
+
+/* Contenedores de los cubos */
+.cube-3d-stage,
+.comparison-3d-wrap {
+    position: relative;
+    isolation: isolate;
+}
+
+/* Escenas 3D: quedan en una capa inferior */
+.cube-3d-scene {
+    position: relative;
+    z-index: 1;
+}
+
+/* Controles del cubo principal y los cubos pequeños */
+.primary-view-controls,
+.compact-view-controls {
+    position: relative;
+    z-index: 100;
+    isolation: isolate;
+    pointer-events: auto;
+}
+
+/* Cada botón conserva prioridad para recibir los clics */
+.primary-view-controls .view-control,
+.compact-view-controls .view-control {
+    position: relative;
+    z-index: 101;
+    pointer-events: auto;
+}
+
+/* Evitar que las caras 3D intercepten clics fuera de su escena */
+.cube-3d {
+    position: relative;
+    z-index: 1;
+}
