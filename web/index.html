@@ -152,6 +152,14 @@
                 <div class="moves-panel-heading"><span>SECUENCIA DE MOVIMIENTOS</span><span class="moves-live"><i></i> LIVE</span></div>
                 <div class="moves-line"><strong>ACTUAL</strong><span id="moves">Resuelto</span></div>
                 <div class="moves-line"><strong>SOLUCIÓN</strong><span id="solutionMoves">—</span></div>
+                <div class="scramble-import-row">
+                  <label class="field-label" for="scrambleInput">CARGAR SCRAMBLE / NOTACIÓN</label>
+                  <div class="scramble-import-controls">
+                    <input id="scrambleInput" type="text" placeholder="R U R' U' F2 …" autocomplete="off" spellcheck="false">
+                    <button id="loadScrambleButton" class="utility-button" type="button">Cargar</button>
+                  </div>
+                  <small>Admite movimientos separados por espacios: U, R', F2…</small>
+                </div>
                 <p id="doubleIndicator" class="double-indicator" aria-live="polite"></p>
               </div>
               <p class="keyboard-help"><kbd>U</kbd><kbd>R</kbd><kbd>F</kbd><kbd>D</kbd><kbd>L</kbd><kbd>B</kbd> giran caras <span><kbd>Shift</kbd> giro inverso <kbd>2</kbd> doble giro</span></p>
@@ -169,7 +177,19 @@
                 <div class="solve-overview-copy"><span>ESTADO DE LA EJECUCIÓN</span><strong id="solveSummary">Pulsa «Resolver» para calcular una solución.</strong></div>
                 <span class="solve-ready-pill">READY</span>
               </div>
-              <div class="phase-section-header"><div><h3>Desglose por fases</h3><span>Las etapas aparecerán aquí al resolver.</span></div><span class="phase-counter">PHASES</span></div>
+              <div class="solve-playback" id="solvePlayback" hidden>
+                <div class="solve-playback-top">
+                  <div><span class="card-kicker">NAVEGACIÓN DE SOLUCIÓN</span><strong id="solvePlaybackPhase">Esperando solución</strong></div>
+                  <div class="solve-playback-actions"><span id="solveStepCounter" class="solve-step-counter">0 / 0</span><button id="copySolutionButton" class="utility-button" type="button" disabled>Copiar solución</button></div>
+                </div>
+                <div class="solve-playback-controls">
+                  <button id="solvePrevButton" class="playback-control" type="button" aria-label="Movimiento anterior" disabled>‹</button>
+                  <button id="solvePlayButton" class="playback-control playback-primary" type="button" aria-label="Reproducir solución" disabled>▶</button>
+                  <button id="solveNextButton" class="playback-control" type="button" aria-label="Movimiento siguiente" disabled>›</button>
+                  <div class="solve-progress-wrap"><input id="solveProgressRange" type="range" min="0" max="0" value="0" step="1" disabled><div class="solve-progress-labels"><span>Inicio</span><span id="solveCurrentMove">—</span><span>Final</span></div></div>
+                </div>
+              </div>
+              <div class="phase-section-header"><div><h3>Desglose por fases</h3><span>Selecciona una fase o un movimiento para inspeccionarlo.</span></div><span class="phase-counter">PHASES</span></div>
               <div id="phaseList" class="phase-list">
                 <div class="empty-state"><span class="empty-state-icon">◇</span><strong>Esperando una resolución</strong><p>Mezcla el cubo y ejecuta un método para ver sus fases, movimientos y estadísticas.</p></div>
               </div>
@@ -189,10 +209,18 @@
                 <div><span class="card-kicker">SIDE-BY-SIDE ANALYSIS</span><h2>Comparación de métodos</h2><p>Ambos algoritmos resuelven exactamente el mismo estado inicial.</p></div>
                 <span class="panel-index">02 <i>/ 04</i></span>
               </header>
-              <div class="compare-intro"><span class="compare-intro-icon">⇄</span><div><strong>Comparación sincronizada</strong><small>Los dos algoritmos parten de la misma mezcla y reproducen sus movimientos en paralelo.</small></div></div>
-              <div class="compare-launch-card">
-                <div><span class="card-kicker">MISMO ESTADO INICIAL</span><strong>Thistlethwaite frente a CFOP</strong><small>Ejecuta ambos métodos y compara movimientos, nodos y tiempo de CPU.</small></div>
-                <button id="compareButton" class="compare-run-button" type="button"><span>⇄</span> Iniciar comparación</button>
+              <div class="compare-intro"><span class="compare-intro-icon">⇄</span><div><strong>Comparación independiente</strong><small>Esta sección genera y conserva su propia mezcla; no depende del estado de Resolver.</small></div></div>
+              <div class="compare-launch-card compare-launch-card--stacked">
+                <div class="compare-launch-copy"><span class="card-kicker">MISMO ESTADO INICIAL</span><strong>Thistlethwaite frente a CFOP</strong><small>Primero genera una mezcla para esta comparación. Ambos métodos recibirán exactamente la misma secuencia.</small></div>
+                <div class="compare-launch-actions">
+                  <button id="compareScrambleButton" class="compare-scramble-button" type="button"><span>⤨</span> Generar mezcla</button>
+                  <button id="compareButton" class="compare-run-button" type="button"><span>⇄</span> Iniciar comparación</button>
+                </div>
+                <div class="compare-scramble-preview" aria-live="polite">
+                  <div class="compare-scramble-meta"><span>SCRAMBLE ACTUAL</span><strong id="compareScrambleCount">Sin mezcla</strong></div>
+                  <p id="compareScramblePreview">Genera una mezcla para comenzar. No se modificará el cubo de Resolver.</p>
+                  <button id="compareSendToSolveButton" class="utility-button" type="button" disabled>Enviar esta mezcla a Resolver ↗</button>
+                </div>
               </div>
               <div class="comparison-cubes">
                 <article class="comparison-method" id="compareThistle">
@@ -202,7 +230,12 @@
                     <div class="comparison-2d-wrap"><div id="thistleCube" class="cube-net cube-net-compact" aria-label="Vista 2D Thistlethwaite"></div></div>
                   </div>
                   <p id="thistleStage" class="comparison-stage">Esperando ejecución</p>
-                  <div class="comparison-count"><strong id="thistleCount">0</strong><span>movimientos ejecutados</span></div>
+                  <div class="comparison-count"><div><strong id="thistleCount">0</strong><span>ejecutados</span></div><div><strong id="thistleTotal">—</strong><span>totales</span></div></div>
+                  <div class="compare-method-details">
+                    <div class="compare-detail-heading"><span>DESGLOSE POR FASE</span><span>THISTLETHWAITE</span></div>
+                    <div id="thistleSteps" class="compare-step-list"><p class="compare-detail-empty">Las fases aparecerán al iniciar la comparación.</p></div>
+                    <div class="compare-notation"><span>NOTACIÓN COMPLETA</span><p id="thistleNotation">—</p></div>
+                  </div>
                 </article>
                 <article class="comparison-method" id="compareCfop">
                   <header class="method-heading"><div><span class="method-kicker">MÉTODO 02</span><h3>CFOP</h3></div><span class="winner-badge">★ MÁS RÁPIDO</span></header>
@@ -211,7 +244,12 @@
                     <div class="comparison-2d-wrap"><div id="cfopCube" class="cube-net cube-net-compact" aria-label="Vista 2D CFOP"></div></div>
                   </div>
                   <p id="cfopStage" class="comparison-stage">Esperando ejecución</p>
-                  <div class="comparison-count"><strong id="cfopCount">0</strong><span>movimientos ejecutados</span></div>
+                  <div class="comparison-count"><div><strong id="cfopCount">0</strong><span>ejecutados</span></div><div><strong id="cfopTotal">—</strong><span>totales</span></div></div>
+                  <div class="compare-method-details">
+                    <div class="compare-detail-heading"><span>DESGLOSE POR FASE</span><span>CFOP</span></div>
+                    <div id="cfopSteps" class="compare-step-list"><p class="compare-detail-empty">Las fases aparecerán al iniciar la comparación.</p></div>
+                    <div class="compare-notation"><span>NOTACIÓN COMPLETA</span><p id="cfopNotation">—</p></div>
+                  </div>
                 </article>
               </div>
               <div class="compare-results-header"><div><span class="card-kicker">RESULTADO</span><h3>Resumen comparativo</h3></div><span class="results-live-pill">SAME SCRAMBLE</span></div>
@@ -263,6 +301,13 @@
                   <div class="validation-tool-group validation-check-card">
                     <span class="field-label">COMPROBAR LEGALIDAD</span>
                     <p>El motor verifica inventario de piezas, orientaciones y paridad de permutaciones.</p>
+                    <div class="validation-actions-row">
+                      <button id="validationUndoButton" class="utility-button" type="button" disabled>↶ Deshacer</button>
+                      <button id="validationRedoButton" class="utility-button" type="button" disabled>↷ Rehacer</button>
+                      <button id="copyFaceletsButton" class="utility-button" type="button">Copiar estado</button>
+                    </div>
+                    <div id="validationInventory" class="validation-inventory" aria-live="polite"></div>
+                    <div class="facelets-import-row"><label class="field-label" for="faceletsInput">IMPORTAR LOS 54 FACELETS</label><div><input id="faceletsInput" type="text" maxlength="54" placeholder="URFDLB…" autocomplete="off" spellcheck="false"><button id="loadFaceletsButton" class="utility-button" type="button">Aplicar</button></div></div>
                     <button id="validateButton" class="validate-run-button" type="button">Validar estado <span>→</span></button>
                     <p id="validationResult" class="validation-result" aria-live="polite"></p>
                   </div>
@@ -273,7 +318,15 @@
 
             <section id="benchmarkPanel" class="surface-card workspace-panel benchmark-panel" hidden aria-hidden="true">
               <header class="panel-header"><div><span class="card-kicker">PERFORMANCE LAB</span><h2>Benchmark</h2><p>Evalúa ambos métodos sobre mezclas reproducibles compartidas.</p></div><span class="panel-index">04 <i>/ 04</i></span></header>
-              <div class="benchmark-launch-card"><div><span class="card-kicker">TEST CONFIGURATION</span><strong>10 mezclas · 25 movimientos</strong><small>Las mismas mezclas se utilizarán para Thistlethwaite y CFOP.</small></div><button id="benchmarkButton" class="benchmark-run-button" type="button"><span>▶</span> Ejecutar benchmark</button></div>
+              <div class="benchmark-launch-card">
+                <div class="benchmark-config-copy"><span class="card-kicker">TEST CONFIGURATION</span><strong>Diseña tu batería de pruebas</strong><small>Los dos métodos reciben exactamente las mismas mezclas en cada prueba.</small></div>
+                <div class="benchmark-config-controls">
+                  <label>MEZCLAS <select id="benchmarkCount"><option value="3">3</option><option value="5">5</option><option value="10" selected>10</option><option value="15">15</option><option value="20">20</option><option value="30">30</option></select></label>
+                  <label>LONGITUD <select id="benchmarkLength"><option value="15">15 movimientos</option><option value="20">20 movimientos</option><option value="25" selected>25 movimientos</option><option value="30">30 movimientos</option><option value="35">35 movimientos</option><option value="40">40 movimientos</option></select></label>
+                  <label class="benchmark-visual-toggle"><input id="benchmarkVisualPlayback" type="checkbox" checked><span>Reproducir soluciones</span></label>
+                  <button id="benchmarkButton" class="benchmark-run-button" type="button"><span>▶</span> Ejecutar benchmark</button>
+                </div>
+              </div>
               <p id="benchmarkStatus" class="benchmark-status">Preparado para iniciar las pruebas.</p>
               <div class="benchmark-tag-row"><span class="benchmark-tag">10 ejecuciones</span><span class="benchmark-tag">Semilla dinámica</span></div>
               <div id="benchmarkTable" class="benchmark-table-container"><div class="empty-state"><span class="empty-state-icon">⌁</span><strong>Sin pruebas registradas</strong><p>Ejecuta el benchmark para comparar movimientos, nodos y tiempo de resolución.</p></div></div>
