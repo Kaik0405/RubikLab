@@ -3,196 +3,295 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#10151b">
-  <title>RubikLab · Estrategias de resolución</title>
+  <meta name="theme-color" content="#080f1d">
+  <meta name="description" content="RubikLab: laboratorio visual para explorar y comparar métodos de resolución del cubo de Rubik.">
+  <title>RubikLab — Cube Algorithm Studio</title>
   <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
 </head>
 <body>
-  <main class="app">
-    <header class="site-header">
-      <div class="brand-block">
-        <p class="eyebrow"><span class="brand-dot" aria-hidden="true"></span> RubikLab <span class="brand-divider">/</span> Prolog Lab</p>
-        <h1>Laboratorio de estrategias</h1>
-        <p class="subtitle">Explora, resuelve y compara métodos para el cubo de Rubik.</p>
-      </div>
-      <p id="status" class="status" aria-live="polite"><span class="status-dot" aria-hidden="true"></span> Cargando...</p>
-    </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navegación principal">
+      <a class="brand" href="#top" aria-label="RubikLab inicio">
+        <span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span class="brand-word">rubik<span>lab</span><small>ALGORITHM STUDIO</small></span>
+      </a>
 
-    <nav class="tabs" aria-label="Secciones principales">
-      <button id="solveButton" class="tab-button" type="button" aria-pressed="true"><span class="tab-icon" aria-hidden="true">⌁</span> Resolver</button>
-      <button id="compareButton" class="tab-button" type="button" aria-pressed="false"><span class="tab-icon" aria-hidden="true">⇄</span> Comparar</button>
-      <button id="validateTabButton" class="tab-button" type="button" aria-pressed="false"><span class="tab-icon" aria-hidden="true">✓</span> Validar</button>
-      <button id="benchmarkButton" class="tab-button" type="button" aria-pressed="false"><span class="tab-icon" aria-hidden="true">◷</span> Benchmark</button>
-    </nav>
-
-    <section class="workspace-grid" aria-label="Área de trabajo">
-      <div class="left-column">
-        <section class="card cube-card" aria-label="Estado actual del cubo">
-          <div class="section-heading">
-            <div>
-              <p class="section-kicker">Vista en directo</p>
-              <h2>Tu cubo</h2>
-            </div>
-            <span class="cube-mark">3 × 3 × 3</span>
-          </div>
-          <div class="cube-view-stack">
-            <section class="cube-3d-block" aria-label="Vista tridimensional interactiva">
-              <div class="cube-3d-stage primary-stage">
-                <div class="cube-3d-scene drag-enabled" id="mainCubeScene" tabindex="0" role="group" aria-label="Arrastra para girar el cubo. También puedes usar las flechas del teclado.">
-                  <div id="mainCube3d" class="cube-3d primary-cube"></div>
-                </div>
-                <div class="cube-view-controls primary-view-controls" aria-label="Controles de perspectiva">
-                  <button class="view-control" type="button" data-cube="main" data-rotate="left" aria-label="Girar a la izquierda" title="Girar a la izquierda">↶</button>
-                  <button class="view-control" type="button" data-cube="main" data-rotate="right" aria-label="Girar a la derecha" title="Girar a la derecha">↷</button>
-                  <button class="view-control" type="button" data-cube="main" data-rotate="up" aria-label="Inclinar hacia arriba" title="Inclinar hacia arriba">↑</button>
-                  <button class="view-control" type="button" data-cube="main" data-rotate="down" aria-label="Inclinar hacia abajo" title="Inclinar hacia abajo">↓</button>
-                  <button class="view-control view-reset" type="button" data-cube="main" data-rotate="reset" aria-label="Restablecer perspectiva" title="Restablecer perspectiva">⟲</button>
-                </div>
-                <span class="drag-hint">Arrastra el cubo para cambiar la perspectiva</span>
-              </div>
-            </section>
-            <section class="cube-2d-block" aria-label="Despliegue bidimensional del cubo">
-              <div class="view-caption"><span>Vista 2D</span><span>Estado por caras</span></div>
-              <div id="cube" class="cube-net" aria-label="Despliegue del cubo actual"></div>
-            </section>
-          </div>
-          <p class="keyboard-help"><kbd>U</kbd> <kbd>R</kbd> <kbd>F</kbd> <kbd>D</kbd> <kbd>L</kbd> <kbd>B</kbd><span>Mayús: inverso</span><span><kbd>2</kbd>: doble giro</span></p>
-        </section>
-
-        <section class="card controls-card" aria-label="Controles del cubo">
-          <div class="control-row">
-            <button id="scrambleButton" type="button"><span aria-hidden="true">⤨</span> Mezclar</button>
-            <button id="resetButton" type="button" class="secondary"><span aria-hidden="true">↺</span> Reiniciar</button>
-          </div>
-          <label class="field-label" for="methodSelect">Método de resolución</label>
-          <select id="methodSelect">
-            <option value="thistle">Thistlethwaite</option>
-            <option value="cfop">CFOP</option>
-          </select>
-          <div class="moves-panel">
-            <p class="moves-line"><strong>Mezcla</strong><span id="moves">Resuelto</span></p>
-            <p class="moves-line"><strong>Solución</strong><span id="solutionMoves">—</span></p>
-          </div>
-          <span id="doubleIndicator" class="double-indicator" aria-live="polite"></span>
-        </section>
+      <div class="workspace-switcher">
+        <span class="workspace-switcher-icon" aria-hidden="true">R</span>
+        <span><strong>Cube workspace</strong><small>Personal lab</small></span>
+        <span class="switcher-chevron" aria-hidden="true">⌄</span>
       </div>
 
-      <div class="right-column">
-        <section id="solvePanel" class="card workspace-panel solve-panel" aria-labelledby="solveHeading" hidden>
-          <div class="section-heading panel-heading">
-            <div>
-              <p class="section-kicker">Resolución paso a paso</p>
-              <h2 id="solveHeading">Solución y explicación</h2>
-            </div>
-            <p id="solveSummary" class="summary">Pulsa «Resolver» para calcular.</p>
+      <div class="nav-group">
+        <p class="nav-label">LABORATORIO</p>
+        <nav class="sidebar-nav">
+          <button class="nav-item active" id="navSolveButton" type="button" data-open-panel="solve" aria-current="page">
+            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4.5 7.5 7.5 4 7.5-4M12 12v9M8 5.2l8 4.5"/></svg></span>
+            <span>Resolver cubo</span><span class="nav-shortcut">01</span>
+          </button>
+          <button class="nav-item" id="navCompareButton" type="button" data-open-panel="compare">
+            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h7v14H4zM13 5h7v14h-7z"/><path d="M7.5 9h0M16.5 9h0M7.5 13h0M16.5 13h0"/></svg></span>
+            <span>Comparar métodos</span><span class="nav-shortcut">02</span>
+          </button>
+          <button class="nav-item" id="validateTabButton" type="button" data-open-panel="validate">
+            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.4 8.3-8 10-4.6-1.7-8-5-8-10V6l8-3Z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg></span>
+            <span>Validar estado</span><span class="nav-shortcut">03</span>
+          </button>
+          <button class="nav-item" id="navBenchmarkButton" type="button" data-open-panel="benchmark">
+            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h17"/><path d="M7 15v-4h3v4M13 15V7h3v8M19 15V3h2v12"/></svg></span>
+            <span>Benchmark</span><span class="nav-shortcut">04</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="sidebar-spacer"></div>
+
+      <div class="engine-card">
+        <div class="engine-card-top"><span class="engine-pulse"></span><span>MOTOR DE CÁLCULO</span></div>
+        <strong>SWI-Prolog</strong>
+        <small>API local · puerto 8080</small>
+        <div class="engine-card-footer"><span class="engine-indicator"></span> Estado del servicio <span class="engine-local">LOCAL</span></div>
+      </div>
+      <div class="sidebar-footer"><span>RUBIKLAB</span><span>STUDIO / 01</span></div>
+    </aside>
+
+    <div class="main-shell" id="top">
+      <header class="topbar">
+        <div class="breadcrumb"><span>Workspace</span><span class="breadcrumb-separator">/</span><strong id="activeBreadcrumb">Resolver cubo</strong></div>
+        <div class="topbar-right">
+          <span class="environment-pill"><span class="environment-dot"></span> ENTORNO LOCAL</span>
+          <span id="status" class="status"><span class="status-dot"></span> Inicializando...</span>
+          <div class="topbar-divider"></div>
+          <span class="topbar-caption">CUBE ENGINE</span>
+          <div class="user-avatar" aria-label="RubikLab">RL</div>
+        </div>
+      </header>
+
+      <main class="main-content">
+        <section class="page-heading">
+          <div>
+            <div class="eyebrow"><span class="eyebrow-mark"></span> CUBE ALGORITHM STUDIO <span class="eyebrow-line"></span> 3×3×3</div>
+            <h1 id="pageTitle">Resolver cubo</h1>
+            <p id="pageDescription">Explora el estado, ejecuta una resolución y observa cada etapa del algoritmo.</p>
           </div>
-          <div id="phaseList" class="phase-list"></div>
+          <div class="page-heading-side">
+            <span class="heading-chip"><span class="heading-chip-dot"></span> VISUAL WORKSPACE</span>
+            <span class="heading-meta">THISTLETHWAITE <b>·</b> CFOP</span>
+          </div>
         </section>
 
-        <section id="comparePanel" class="card workspace-panel compare-panel" aria-labelledby="compareHeading" hidden>
-          <div class="section-heading panel-heading">
-            <div>
-              <p class="section-kicker">Duelo de algoritmos</p>
-              <h2 id="compareHeading">Dos estrategias, un mismo estado</h2>
-              <p class="panel-description">Observa cómo cada método resuelve el cubo y compara sus resultados.</p>
-            </div>
-            <label class="range-label" for="intervalControl">
-              <span>Velocidad de animación <output id="intervalValue">400</output> ms</span>
-              <input id="intervalControl" type="range" min="100" max="1000" step="50" value="400">
-            </label>
-          </div>
-          <div class="comparison-cubes">
-            <article class="comparison-method" id="compareThistle">
-              <div class="method-heading"><h3>Thistlethwaite</h3><span class="winner-badge">Primero</span></div>
-              <div class="comparison-visuals">
-                <div class="comparison-3d-wrap">
-                  <div class="cube-3d-scene compact-scene">
-                    <div id="thistleCube3d" class="cube-3d comparison-cube-3d"></div>
+        <section class="workspace-grid" aria-label="Espacio de trabajo RubikLab">
+          <div class="left-column">
+            <article class="surface-card cube-card">
+              <header class="card-heading cube-card-heading">
+                <div><span class="card-kicker">VISUALIZACIÓN</span><h2>Estado del cubo</h2></div>
+                <div class="cube-card-tools"><span class="cube-mark">3×3×3</span><span class="cube-state-label"><span class="state-dot"></span> INTERACTIVO</span></div>
+              </header>
+
+              <div class="cube-content">
+                <section class="cube-3d-block" aria-label="Vista tridimensional">
+                  <div class="visual-label-row"><span>VISTA 3D</span><span class="visual-hint">ARRASTRA PARA GIRAR</span></div>
+                  <div class="cube-3d-stage primary-stage">
+                    <div id="mainCubeScene" class="cube-3d-scene" tabindex="0" role="img" aria-label="Cubo de Rubik tridimensional. Arrastra para rotarlo o usa las flechas del teclado.">
+                      <div id="mainCube3d" class="cube-3d primary-cube"></div>
+                    </div>
                   </div>
-                  <div class="cube-view-controls compact-view-controls" aria-label="Cambiar perspectiva de Thistlethwaite">
-                    <button class="view-control" type="button" data-cube="thistle" data-rotate="left" aria-label="Girar Thistlethwaite a la izquierda">↶</button>
-                    <button class="view-control" type="button" data-cube="thistle" data-rotate="right" aria-label="Girar Thistlethwaite a la derecha">↷</button>
-                    <button class="view-control" type="button" data-cube="thistle" data-rotate="reset" aria-label="Restablecer Thistlethwaite">⟲</button>
+                  <div class="primary-view-controls" aria-label="Controles de cámara del cubo principal">
+                    <button class="view-control" type="button" data-cube="main" data-rotate="left" aria-label="Rotar a la izquierda">←</button>
+                    <button class="view-control" type="button" data-cube="main" data-rotate="up" aria-label="Rotar hacia arriba">↑</button>
+                    <button class="view-control" type="button" data-cube="main" data-rotate="down" aria-label="Rotar hacia abajo">↓</button>
+                    <button class="view-control" type="button" data-cube="main" data-rotate="right" aria-label="Rotar a la derecha">→</button>
+                    <button class="view-control view-reset" type="button" data-cube="main" data-rotate="reset" aria-label="Restablecer cámara">↺</button>
                   </div>
-                </div>
-                <div class="comparison-2d-wrap">
-                  <div class="view-caption compact-caption"><span>Vista 2D</span></div>
-                  <div class="comparison-cube cube-net cube-net-compact" id="thistleCube" aria-label="Despliegue 2D de Thistlethwaite"></div>
-                </div>
+                  <p class="drag-hint">Usa el ratón, el tacto o las flechas para explorar el cubo.</p>
+                </section>
+
+                <section class="cube-2d-block" aria-label="Desarrollo bidimensional">
+                  <div class="visual-label-row"><span>DESARROLLO 2D</span><span class="visual-hint">54 FACELETS</span></div>
+                  <div id="cube" class="cube-net" aria-label="Desarrollo bidimensional del cubo"></div>
+                  <div class="face-legend" aria-label="Colores de las caras">
+                    <span><i class="legend-u"></i> U</span><span><i class="legend-r"></i> R</span><span><i class="legend-f"></i> F</span><span><i class="legend-d"></i> D</span><span><i class="legend-l"></i> L</span><span><i class="legend-b"></i> B</span>
+                  </div>
+                </section>
               </div>
-              <p class="comparison-stage" id="thistleStage">Pendiente</p>
-              <p class="comparison-count"><strong id="thistleCount">0</strong><span> movimientos</span></p>
+
+              <footer class="cube-card-footer">
+                <div class="cube-footer-note"><span class="footer-icon">⌘</span><span><strong>Vista sincronizada</strong><small>La red 2D refleja el mismo estado que el cubo 3D.</small></span></div>
+                <div class="cube-footer-badge">LIVE STATE <span></span></div>
+              </footer>
             </article>
-            <article class="comparison-method" id="compareCfop">
-              <div class="method-heading"><h3>CFOP</h3><span class="winner-badge">Primero</span></div>
-              <div class="comparison-visuals">
-                <div class="comparison-3d-wrap">
-                  <div class="cube-3d-scene compact-scene">
-                    <div id="cfopCube3d" class="cube-3d comparison-cube-3d"></div>
-                  </div>
-                  <div class="cube-view-controls compact-view-controls" aria-label="Cambiar perspectiva de CFOP">
-                    <button class="view-control" type="button" data-cube="cfop" data-rotate="left" aria-label="Girar CFOP a la izquierda">↶</button>
-                    <button class="view-control" type="button" data-cube="cfop" data-rotate="right" aria-label="Girar CFOP a la derecha">↷</button>
-                    <button class="view-control" type="button" data-cube="cfop" data-rotate="reset" aria-label="Restablecer CFOP">⟲</button>
-                  </div>
-                </div>
-                <div class="comparison-2d-wrap">
-                  <div class="view-caption compact-caption"><span>Vista 2D</span></div>
-                  <div class="comparison-cube cube-net cube-net-compact" id="cfopCube" aria-label="Despliegue 2D de CFOP"></div>
-                </div>
+
+            <article class="surface-card controls-card">
+              <header class="card-heading controls-card-heading">
+                <div><span class="card-kicker">CONTROL CENTER</span><h2>Panel de operaciones</h2></div>
+                <span class="controls-indicator"><i></i> READY</span>
+              </header>
+
+              <div class="action-grid">
+                <button id="scrambleButton" class="action-button action-primary" type="button"><span class="action-icon">⤨</span><span><strong>Mezclar</strong><small>Generar scramble</small></span></button>
+                <button id="resetButton" class="action-button action-secondary" type="button"><span class="action-icon">↺</span><span><strong>Reiniciar</strong><small>Volver al estado base</small></span></button>
+                <button id="solveButton" class="action-button action-run" type="button"><span class="action-icon">▶</span><span><strong>Resolver</strong><small>Ejecutar algoritmo</small></span></button>
               </div>
-              <p class="comparison-stage" id="cfopStage">Pendiente</p>
-              <p class="comparison-count"><strong id="cfopCount">0</strong><span> movimientos</span></p>
+
+              <div class="controls-divider"></div>
+              <div class="settings-row">
+                <label class="field-label" for="methodSelect">MÉTODO DE RESOLUCIÓN</label>
+                <select id="methodSelect">
+                  <option value="thistle">Thistlethwaite</option>
+                  <option value="cfop">CFOP</option>
+                </select>
+              </div>
+              <div class="settings-row speed-row">
+                <div class="speed-heading"><label class="field-label" for="intervalControl">VELOCIDAD DE REPRODUCCIÓN</label><span class="speed-value"><output id="intervalValue">180</output> ms</span></div>
+                <input id="intervalControl" type="range" min="90" max="500" step="10" value="180">
+                <div class="speed-scale"><span>RÁPIDA</span><span>LENTA</span></div>
+              </div>
+
+              <div class="moves-panel">
+                <div class="moves-panel-heading"><span>SECUENCIA DE MOVIMIENTOS</span><span class="moves-live"><i></i> LIVE</span></div>
+                <div class="moves-line"><strong>ACTUAL</strong><span id="moves">Resuelto</span></div>
+                <div class="moves-line"><strong>SOLUCIÓN</strong><span id="solutionMoves">—</span></div>
+                <p id="doubleIndicator" class="double-indicator" aria-live="polite"></p>
+              </div>
+              <p class="keyboard-help"><kbd>U</kbd><kbd>R</kbd><kbd>F</kbd><kbd>D</kbd><kbd>L</kbd><kbd>B</kbd> giran caras <span><kbd>Shift</kbd> giro inverso <kbd>2</kbd> doble giro</span></p>
             </article>
           </div>
-          <div id="compareSummary" class="results-area"></div>
-        </section>
 
-        <section id="validatePanel" class="card workspace-panel validate-panel" aria-labelledby="validateHeading" hidden>
-          <div class="section-heading panel-heading">
-            <div>
-              <p class="section-kicker">Comprobación de estado</p>
-              <h2 id="validateHeading">¿Es un cubo válido?</h2>
-              <p class="panel-description">Selecciona un sticker para cambiar su color y comprobar si el estado es alcanzable.</p>
-            </div>
-            <span class="muted-label">Clic en una pieza para cambiarla</span>
-          </div>
-          <div class="validation-layout">
-            <div id="validationCube" class="cube-net editable-cube" aria-label="Cubo editable para validar"></div>
-            <div class="validation-tools">
-              <div class="validation-actions">
-                <button id="loadCurrentButton" type="button" class="secondary">Cargar cubo actual</button>
-                <button id="solvedValidationButton" type="button" class="secondary">Estado resuelto</button>
-                <button id="validateButton" type="button">Validar estado <span aria-hidden="true">→</span></button>
+          <div class="right-column">
+            <section id="solvePanel" class="surface-card workspace-panel solve-panel" aria-hidden="false">
+              <header class="panel-header">
+                <div><span class="card-kicker">RESOLUTION FLOW</span><h2>Etapas de resolución</h2><p>Desglose del algoritmo seleccionado y sus métricas.</p></div>
+                <span class="panel-index">01 <i>/ 04</i></span>
+              </header>
+              <div class="solve-overview">
+                <div class="solve-overview-icon"><svg viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4.5 7.5 7.5 4 7.5-4M12 12v9"/></svg></div>
+                <div class="solve-overview-copy"><span>ESTADO DE LA EJECUCIÓN</span><strong id="solveSummary">Pulsa «Resolver» para calcular una solución.</strong></div>
+                <span class="solve-ready-pill">READY</span>
               </div>
-              <div class="demo-box">
-                <span class="muted-label">Probar ejemplos ilegales</span>
-                <div class="demo-actions">
-                  <button type="button" class="secondary demo-button" data-demo-kind="corner">Esquina torcida</button>
-                  <button type="button" class="secondary demo-button" data-demo-kind="edge">Arista volteada</button>
-                  <button type="button" class="secondary demo-button" data-demo-kind="swap">Esquinas intercambiadas</button>
+              <div class="phase-section-header"><div><h3>Desglose por fases</h3><span>Las etapas aparecerán aquí al resolver.</span></div><span class="phase-counter">PHASES</span></div>
+              <div id="phaseList" class="phase-list">
+                <div class="empty-state"><span class="empty-state-icon">◇</span><strong>Esperando una resolución</strong><p>Mezcla el cubo y ejecuta un método para ver sus fases, movimientos y estadísticas.</p></div>
+              </div>
+              <div class="methods-overview">
+                <div class="phase-section-header"><div><h3>Métodos disponibles</h3><span>Dos estrategias, un mismo objetivo.</span></div><span class="phase-counter">SOLVERS</span></div>
+                <div class="method-info-grid">
+                  <article class="method-info-card method-info-thistle"><div class="method-info-top"><span class="method-info-symbol">T</span><span>4 FASES</span></div><strong>Thistlethwaite</strong><p>Reducción progresiva del grupo de movimientos hasta alcanzar el estado resuelto.</p><div class="method-info-track"><i></i><i></i><i></i><i></i></div></article>
+                  <article class="method-info-card method-info-cfop"><div class="method-info-top"><span class="method-info-symbol">C</span><span>7 FASES</span></div><strong>CFOP</strong><p>Cruz, cuatro pares F2L y resolución de la última capa mediante OLL y PLL.</p><div class="method-info-track"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
                 </div>
               </div>
-              <p id="validationResult" class="validation-result" aria-live="polite"></p>
-            </div>
+              <div class="metric-legend"><div><span class="metric-legend-icon">⌁</span><span><strong>Nodos</strong><small>Exploración del solver</small></span></div><div><span class="metric-legend-icon">◷</span><span><strong>Tiempo</strong><small>CPU empleado</small></span></div><div><span class="metric-legend-icon">#</span><span><strong>Movimientos</strong><small>Longitud de solución</small></span></div></div>
+              <div class="panel-footnote"><span class="panel-footnote-dot"></span> Los datos de nodos y tiempo provienen del motor Prolog.</div>
+            </section>
+
+            <section id="comparePanel" class="surface-card workspace-panel compare-panel" hidden aria-hidden="true">
+              <header class="panel-header">
+                <div><span class="card-kicker">SIDE-BY-SIDE ANALYSIS</span><h2>Comparación de métodos</h2><p>Ambos algoritmos resuelven exactamente el mismo estado inicial.</p></div>
+                <span class="panel-index">02 <i>/ 04</i></span>
+              </header>
+              <div class="compare-intro"><span class="compare-intro-icon">⇄</span><div><strong>Comparación sincronizada</strong><small>Los dos algoritmos parten de la misma mezcla y reproducen sus movimientos en paralelo.</small></div></div>
+              <div class="compare-launch-card">
+                <div><span class="card-kicker">MISMO ESTADO INICIAL</span><strong>Thistlethwaite frente a CFOP</strong><small>Ejecuta ambos métodos y compara movimientos, nodos y tiempo de CPU.</small></div>
+                <button id="compareButton" class="compare-run-button" type="button"><span>⇄</span> Iniciar comparación</button>
+              </div>
+              <div class="comparison-cubes">
+                <article class="comparison-method" id="compareThistle">
+                  <header class="method-heading"><div><span class="method-kicker">MÉTODO 01</span><h3>Thistlethwaite</h3></div><span class="winner-badge">★ MÁS RÁPIDO</span></header>
+                  <div class="comparison-visuals">
+                    <div class="comparison-3d-wrap"><div class="cube-3d-scene compact-scene"><div id="thistleCube3d" class="cube-3d comparison-cube-3d"></div></div><div class="compact-view-controls"><button class="view-control" data-cube="thistle" data-rotate="left" type="button" aria-label="Rotar Thistlethwaite a la izquierda">←</button><button class="view-control" data-cube="thistle" data-rotate="right" type="button" aria-label="Rotar Thistlethwaite a la derecha">→</button><button class="view-control" data-cube="thistle" data-rotate="reset" type="button" aria-label="Restablecer Thistlethwaite">↺</button></div></div>
+                    <div class="comparison-2d-wrap"><div id="thistleCube" class="cube-net cube-net-compact" aria-label="Vista 2D Thistlethwaite"></div></div>
+                  </div>
+                  <p id="thistleStage" class="comparison-stage">Esperando ejecución</p>
+                  <div class="comparison-count"><strong id="thistleCount">0</strong><span>movimientos ejecutados</span></div>
+                </article>
+                <article class="comparison-method" id="compareCfop">
+                  <header class="method-heading"><div><span class="method-kicker">MÉTODO 02</span><h3>CFOP</h3></div><span class="winner-badge">★ MÁS RÁPIDO</span></header>
+                  <div class="comparison-visuals">
+                    <div class="comparison-3d-wrap"><div class="cube-3d-scene compact-scene"><div id="cfopCube3d" class="cube-3d comparison-cube-3d"></div></div><div class="compact-view-controls"><button class="view-control" data-cube="cfop" data-rotate="left" type="button" aria-label="Rotar CFOP a la izquierda">←</button><button class="view-control" data-cube="cfop" data-rotate="right" type="button" aria-label="Rotar CFOP a la derecha">→</button><button class="view-control" data-cube="cfop" data-rotate="reset" type="button" aria-label="Restablecer CFOP">↺</button></div></div>
+                    <div class="comparison-2d-wrap"><div id="cfopCube" class="cube-net cube-net-compact" aria-label="Vista 2D CFOP"></div></div>
+                  </div>
+                  <p id="cfopStage" class="comparison-stage">Esperando ejecución</p>
+                  <div class="comparison-count"><strong id="cfopCount">0</strong><span>movimientos ejecutados</span></div>
+                </article>
+              </div>
+              <div class="compare-results-header"><div><span class="card-kicker">RESULTADO</span><h3>Resumen comparativo</h3></div><span class="results-live-pill">SAME SCRAMBLE</span></div>
+              <div id="compareSummary" class="compare-summary"><div class="empty-state compact-empty"><strong>Sin resultados todavía</strong><p>Pulsa «Iniciar comparación» para reproducir los dos métodos en paralelo.</p></div></div>
+            </section>
+
+            <section id="validatePanel" class="surface-card workspace-panel validate-panel" hidden aria-hidden="true">
+              <header class="panel-header"><div><span class="card-kicker">STATE INSPECTOR</span><h2>Validar cubo</h2><p>Comprueba si la configuración representa un cubo físico posible.</p></div><span class="panel-index">03 <i>/ 04</i></span></header>
+              <div class="validate-intro"><span class="validate-shield">✓</span><div><strong>Inspector de estados</strong><small>Selecciona las pegatinas para cambiar sus colores.</small></div></div>
+              <div class="validation-layout">
+                <div class="validation-visual-column">
+                  <div class="validation-cube-wrap validation-3d-card">
+                    <div class="validation-cube-heading"><span class="validation-cube-label">EDITOR TRIDIMENSIONAL</span><span class="validation-live"><i></i> INTERACTIVO</span></div>
+                    <div id="validationCubeScene" class="cube-3d-scene validation-3d-scene" tabindex="0" role="group" aria-label="Cubo 3D editable. Arrastra para girarlo y selecciona una pegatina para pintarla.">
+                      <div id="validationCube3d" class="cube-3d validation-3d-cube"></div>
+                    </div>
+                    <div class="validation-view-controls" aria-label="Controles de cámara del cubo de validación">
+                      <button class="view-control" type="button" data-cube="validation" data-rotate="left" aria-label="Rotar cubo a la izquierda">←</button>
+                      <button class="view-control" type="button" data-cube="validation" data-rotate="up" aria-label="Rotar cubo hacia arriba">↑</button>
+                      <button class="view-control" type="button" data-cube="validation" data-rotate="down" aria-label="Rotar cubo hacia abajo">↓</button>
+                      <button class="view-control" type="button" data-cube="validation" data-rotate="right" aria-label="Rotar cubo a la derecha">→</button>
+                      <button class="view-control view-reset" type="button" data-cube="validation" data-rotate="reset" aria-label="Restablecer cámara">↺</button>
+                    </div>
+                    <p class="validation-edit-hint">Arrastra para girar · toca una pegatina para aplicar el color seleccionado</p>
+                  </div>
+                  <div class="validation-net-wrap">
+                    <div class="validation-net-heading"><span>DESARROLLO 2D</span><small>VISTA SINCRONIZADA</small></div>
+                    <div id="validationCube" class="cube-net editable-cube" aria-label="Desarrollo 2D editable y sincronizado con el cubo 3D"></div>
+                  </div>
+                </div>
+                <div class="validation-tools">
+                  <div class="validation-tool-group validation-palette-group">
+                    <span class="field-label">PALETA · COLOR ACTIVO</span>
+                    <div class="validation-palette" role="group" aria-label="Seleccionar color para pintar las pegatinas">
+                      <button class="validation-swatch swatch-u is-selected" type="button" data-facelet-color="U" aria-label="Blanco" aria-pressed="true"><span></span><small>U</small></button>
+                      <button class="validation-swatch swatch-r" type="button" data-facelet-color="R" aria-label="Rojo" aria-pressed="false"><span></span><small>R</small></button>
+                      <button class="validation-swatch swatch-f" type="button" data-facelet-color="F" aria-label="Verde" aria-pressed="false"><span></span><small>F</small></button>
+                      <button class="validation-swatch swatch-d" type="button" data-facelet-color="D" aria-label="Amarillo" aria-pressed="false"><span></span><small>D</small></button>
+                      <button class="validation-swatch swatch-l" type="button" data-facelet-color="L" aria-label="Naranja" aria-pressed="false"><span></span><small>L</small></button>
+                      <button class="validation-swatch swatch-b" type="button" data-facelet-color="B" aria-label="Azul" aria-pressed="false"><span></span><small>B</small></button>
+                    </div>
+                    <p id="validationColorLabel" class="validation-color-label">Color seleccionado: blanco</p>
+                  </div>
+                  <div class="validation-tool-group">
+                    <span class="field-label">CARGAR CONFIGURACIÓN</span>
+                    <button id="loadCurrentButton" class="utility-button" type="button">Cargar cubo de Resolver <span>↗</span></button>
+                    <button id="solvedValidationButton" class="utility-button" type="button">Restaurar cubo resuelto <span>↺</span></button>
+                  </div>
+                  <div class="validation-tool-group validation-check-card">
+                    <span class="field-label">COMPROBAR LEGALIDAD</span>
+                    <p>El motor verifica inventario de piezas, orientaciones y paridad de permutaciones.</p>
+                    <button id="validateButton" class="validate-run-button" type="button">Validar estado <span>→</span></button>
+                    <p id="validationResult" class="validation-result" aria-live="polite"></p>
+                  </div>
+                </div>
+              </div>
+              <div class="validation-rules"><strong>Se comprueba</strong><span>Inventario de piezas</span><span>Orientación de esquinas</span><span>Orientación de aristas</span><span>Paridad de permutaciones</span></div>
+            </section>
+
+            <section id="benchmarkPanel" class="surface-card workspace-panel benchmark-panel" hidden aria-hidden="true">
+              <header class="panel-header"><div><span class="card-kicker">PERFORMANCE LAB</span><h2>Benchmark</h2><p>Evalúa ambos métodos sobre mezclas reproducibles compartidas.</p></div><span class="panel-index">04 <i>/ 04</i></span></header>
+              <div class="benchmark-launch-card"><div><span class="card-kicker">TEST CONFIGURATION</span><strong>10 mezclas · 25 movimientos</strong><small>Las mismas mezclas se utilizarán para Thistlethwaite y CFOP.</small></div><button id="benchmarkButton" class="benchmark-run-button" type="button"><span>▶</span> Ejecutar benchmark</button></div>
+              <p id="benchmarkStatus" class="benchmark-status">Preparado para iniciar las pruebas.</p>
+              <div class="benchmark-tag-row"><span class="benchmark-tag">10 ejecuciones</span><span class="benchmark-tag">Semilla dinámica</span></div>
+              <div id="benchmarkTable" class="benchmark-table-container"><div class="empty-state"><span class="empty-state-icon">⌁</span><strong>Sin pruebas registradas</strong><p>Ejecuta el benchmark para comparar movimientos, nodos y tiempo de resolución.</p></div></div>
+            </section>
+
+            <aside class="workspace-note-card">
+              <div class="note-heading"><div><span class="card-kicker">LAB NOTES</span><strong>Cómo leer los resultados</strong></div><span class="note-icon">i</span></div>
+              <div class="note-item"><span class="note-symbol">#</span><span><strong>Movimientos</strong><small>Longitud de la secuencia necesaria para completar la resolución.</small></span></div>
+              <div class="note-item"><span class="note-symbol">⌁</span><span><strong>Nodos explorados</strong><small>Cantidad de estados examinados durante la búsqueda.</small></span></div>
+              <div class="note-item"><span class="note-symbol">◷</span><span><strong>Tiempo de CPU</strong><small>Tiempo empleado por el motor al calcular la solución.</small></span></div>
+              <div class="note-footer"><span></span> Medidas reportadas por el backend Prolog.</div>
+            </aside>
           </div>
         </section>
 
-        <section id="benchmarkPanel" class="card workspace-panel benchmark-panel" aria-labelledby="benchmarkHeading" hidden>
-          <div class="section-heading panel-heading">
-            <div>
-              <p class="section-kicker">Prueba de rendimiento</p>
-              <h2 id="benchmarkHeading">Rendimiento comparado</h2>
-              <p class="panel-description">Promedios obtenidos al ejecutar un conjunto reproducible de pruebas.</p>
-            </div>
-            <span class="benchmark-tag">10 ejecuciones · semilla 42</span>
-          </div>
-          <p id="benchmarkStatus" class="benchmark-status" aria-live="polite"></p>
-          <div id="benchmarkTable" class="results-area"></div>
-        </section>
-      </div>
-    </section>
-  </main>
-  <script src="app.js"></script>
+        <footer class="main-footer"><span>RUBIKLAB <b>·</b> ALGORITHM STUDIO</span><span>Construido para explorar, resolver y comprender.</span></footer>
+      </main>
+    </div>
+  </div>
 </body>
 </html>

@@ -3,6 +3,8 @@
 const cubeElement = document.querySelector("#cube");
 const mainCube3dElement = document.querySelector("#mainCube3d");
 const mainCubeScene = document.querySelector("#mainCubeScene");
+const validationCube3dElement = document.querySelector("#validationCube3d");
+const validationCubeScene = document.querySelector("#validationCubeScene");
 const movesElement = document.querySelector("#moves");
 const solutionMovesElement = document.querySelector("#solutionMoves");
 const statusElement = document.querySelector("#status");
@@ -23,12 +25,19 @@ const benchmarkStatus = document.querySelector("#benchmarkStatus");
 const benchmarkTable = document.querySelector("#benchmarkTable");
 const validatePanel = document.querySelector("#validatePanel");
 const validationCube = document.querySelector("#validationCube");
+const validationColorLabel = document.querySelector("#validationColorLabel");
+const leftColumn = document.querySelector(".left-column");
+const workspaceGrid = document.querySelector(".workspace-grid");
+const workspaceNoteCard = document.querySelector(".workspace-note-card");
 const loadCurrentButton = document.querySelector("#loadCurrentButton");
 const solvedValidationButton = document.querySelector("#solvedValidationButton");
 const validateButton = document.querySelector("#validateButton");
 const validationResult = document.querySelector("#validationResult");
 const intervalControl = document.querySelector("#intervalControl");
 const intervalValue = document.querySelector("#intervalValue");
+const navSolveButton = document.querySelector("#navSolveButton");
+const navCompareButton = document.querySelector("#navCompareButton");
+const navBenchmarkButton = document.querySelector("#navBenchmarkButton");
 
 const comparison = {
   thistle: {
@@ -52,6 +61,7 @@ let solutionMoves = [];
 let doubleMovePending = false;
 let requestInProgress = false;
 let validationFacelets = [];
+let selectedValidationColor = "U";
 
 const faceLayout = [
   { face: "u", start: 0, column: 4, row: 1 },
@@ -79,9 +89,20 @@ function createCube(container) {
       const sticker = document.createElement("div");
 
       sticker.className = "sticker";
-      sticker.dataset.index = String(face.start + index);
+      const faceletIndex = face.start + index;
+      sticker.dataset.index = String(faceletIndex);
       sticker.style.gridColumn = String(face.column + (index % 3));
       sticker.style.gridRow = String(face.row + Math.floor(index / 3));
+
+      if (container.id === "validationCube") {
+        const isCenter = faceletIndex % 9 === 4;
+        sticker.tabIndex = isCenter ? -1 : 0;
+        sticker.setAttribute("role", isCenter ? "img" : "button");
+        sticker.setAttribute("aria-label", isCenter
+          ? "Centro fijo de la cara"
+          : `Pegatina editable ${faceletIndex + 1}`);
+        if (isCenter) sticker.setAttribute("aria-disabled", "true");
+      }
 
       container.appendChild(sticker);
     }
@@ -106,7 +127,7 @@ function create3DCube(container) {
     const face = document.createElement("div");
 
     face.className = `cube-face cube-face--${name}`;
-    face.setAttribute("aria-hidden", "true");
+    face.setAttribute("aria-label", `${name} face`);
 
     for (let row = 0; row < 3; row += 1) {
       for (let col = 0; col < 3; col += 1) {
@@ -118,9 +139,18 @@ function create3DCube(container) {
         const faceColumn =
           (name === "right" || name === "left") ? 2 - col : col;
 
-        sticker.dataset.index = String(
-          start + row * 3 + faceColumn
-        );
+        const faceletIndex = start + row * 3 + faceColumn;
+        sticker.dataset.index = String(faceletIndex);
+
+        if (container.id === "validationCube3d") {
+          const isCenter = faceletIndex % 9 === 4;
+          sticker.tabIndex = isCenter ? -1 : 0;
+          sticker.setAttribute("role", isCenter ? "img" : "button");
+          sticker.setAttribute("aria-label", isCenter
+            ? `Centro de la cara ${name}`
+            : `Pegatina editable ${faceletIndex + 1}`);
+          if (isCenter) sticker.setAttribute("aria-disabled", "true");
+        }
 
         face.appendChild(sticker);
       }
@@ -135,6 +165,7 @@ function create3DCube(container) {
 
 const cameraDefaults = {
   main: { x: -27, y: -35 },
+  validation: { x: -27, y: -35 },
   thistle: { x: -27, y: -35 },
   cfop: { x: -27, y: -35 }
 };
@@ -148,6 +179,7 @@ const cameraState = Object.fromEntries(
 
 const cubeElements = {
   main: mainCube3dElement,
+  validation: validationCube3dElement,
   thistle: comparison.thistle.cube3d,
   cfop: comparison.cfop.cube3d
 };
@@ -183,21 +215,27 @@ function rotateCubeCamera(name, direction) {
   applyCubeCamera(name);
 }
 
-// Rotación libre del cubo principal mediante ratón o pantalla táctil.
-function enableMainCubeDrag(scene) {
+// Rotación libre de las vistas 3D mediante ratón, tacto o teclado.
+function enableCubeDrag(scene, cameraName = "main") {
   if (!scene) return;
 
   let drag = null;
 
   scene.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
+    if (event.target.closest("button")) return;
 
     drag = {
       pointerId: event.pointerId,
       x: event.clientX,
-      y: event.clientY
+      y: event.clientY,
+      startX: event.clientX,
+      startY: event.clientY,
+      moved: false,
+      sticker: cameraName === "validation"
+        ? event.target.closest(".sticker[role='button']")
+        : null
     };
-
     scene.setPointerCapture(event.pointerId);
     scene.classList.add("is-dragging");
   });
@@ -207,49 +245,40 @@ function enableMainCubeDrag(scene) {
 
     const deltaX = event.clientX - drag.x;
     const deltaY = event.clientY - drag.y;
-
     drag.x = event.clientX;
     drag.y = event.clientY;
+    if (Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 5) {
+      drag.moved = true;
+    }
 
-    cameraState.main.y += deltaX * 0.72;
-    cameraState.main.x -= deltaY * 0.72;
-
-    applyCubeCamera("main");
+    cameraState[cameraName].y += deltaX * 0.72;
+    cameraState[cameraName].x -= deltaY * 0.72;
+    applyCubeCamera(cameraName);
   });
 
   const stopDragging = (event) => {
     if (!drag || drag.pointerId !== event.pointerId) return;
-
+    const completedDrag = drag;
     drag = null;
     scene.classList.remove("is-dragging");
-
-    if (scene.hasPointerCapture(event.pointerId)) {
-      scene.releasePointerCapture(event.pointerId);
+    if (cameraName === "validation" && !completedDrag.moved && completedDrag.sticker) {
+      paintValidationSticker(completedDrag.sticker);
     }
+    if (scene.hasPointerCapture(event.pointerId)) scene.releasePointerCapture(event.pointerId);
   };
 
   scene.addEventListener("pointerup", stopDragging);
   scene.addEventListener("pointercancel", stopDragging);
-
   scene.addEventListener("lostpointercapture", () => {
     drag = null;
     scene.classList.remove("is-dragging");
   });
-
   scene.addEventListener("keydown", (event) => {
-    const keyMap = {
-      ArrowLeft: "left",
-      ArrowRight: "right",
-      ArrowUp: "up",
-      ArrowDown: "down"
-    };
-
+    const keyMap = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down" };
     const direction = keyMap[event.key];
-
     if (!direction) return;
-
     event.preventDefault();
-    rotateCubeCamera("main", direction);
+    rotateCubeCamera(cameraName, direction);
   });
 }
 
@@ -262,6 +291,114 @@ document.querySelectorAll("[data-cube][data-rotate]").forEach((button) => {
     );
   });
 });
+
+// Movimiento visual sincronizado: el cubo realiza un giro 3D breve por cada
+// movimiento lógico. El estado de colores solo se actualiza al terminar el giro.
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+function moveAxis(move) {
+  const face = String(move || "").toLowerCase()[0];
+  if (face === "u" || face === "d") return "Y";
+  if (face === "r" || face === "l") return "X";
+  return "Z";
+}
+
+function moveAngle(move) {
+  const token = String(move || "").toLowerCase();
+  const direction = token.endsWith("i") ? -1 : 1;
+  return 90 * (token.endsWith("2") ? 2 : 1) * direction;
+}
+
+async function animateCubeTurn(cube, move, duration = null) {
+  if (!cube) return;
+  const ms = Math.max(110, duration ?? Number(intervalControl?.value || 180));
+  if (reducedMotion.matches || !cube.animate) {
+    cube.classList.add("cube-turn-settle");
+    await new Promise((resolve) => setTimeout(resolve, 35));
+    cube.classList.remove("cube-turn-settle");
+    return;
+  }
+
+  const axis = moveAxis(move);
+  const angle = moveAngle(move);
+  const camera = `rotateX(${cameraState.main?.x ?? -27}deg) rotateY(${cameraState.main?.y ?? -35}deg)`;
+  const isComparison = cube === comparison.thistle.cube3d || cube === comparison.cfop.cube3d;
+  const cameraName = isComparison ? (cube === comparison.thistle.cube3d ? "thistle" : "cfop") : "main";
+  const rotation = cameraState[cameraName] || { x: -27, y: -35 };
+  const base = `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`;
+  const spin = `${base} rotate${axis}(${angle}deg)`;
+  const half = `${base} rotate${axis}(${angle * 0.52}deg) scale(1.035)`;
+
+  const animation = cube.animate([
+    { transform: base, offset: 0 },
+    { transform: half, offset: 0.52 },
+    { transform: spin, offset: 0.86 },
+    { transform: base, offset: 1 }
+  ], {
+    duration: Math.min(520, Math.max(170, ms * 0.92)),
+    easing: "cubic-bezier(.2,.78,.2,1)",
+    fill: "none"
+  });
+  try { await animation.finished; } catch (_) { /* animación cancelada */ }
+}
+
+function staggerIn(container, selector = ":scope > *", baseDelay = 55) {
+  if (!container) return;
+  const items = Array.from(container.querySelectorAll(selector));
+  items.forEach((item, index) => {
+    item.classList.remove("motion-stagger-in");
+    item.style.setProperty("--motion-delay", `${Math.min(index, 10) * baseDelay}ms`);
+    void item.offsetWidth;
+    item.classList.add("motion-stagger-in");
+  });
+}
+
+function animateValue(element, target, suffix = "", decimals = 0) {
+  if (!element) return;
+  const end = Number(target) || 0;
+  if (reducedMotion.matches) {
+    element.textContent = `${end.toFixed(decimals)}${suffix}`;
+    return;
+  }
+  const start = performance.now();
+  const duration = 720;
+  const tick = (now) => {
+    const progress = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    element.textContent = `${(end * eased).toFixed(decimals)}${suffix}`;
+    if (progress < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+function renderMetricChart(rows, target) {
+  if (!target || !rows.length) return;
+  const max = Math.max(1, ...rows.flatMap((row) => [row.thistle.seconds, row.cfop.seconds]));
+  const points = (method) => rows.map((row, index) => {
+    const x = 24 + index * (252 / Math.max(1, rows.length - 1));
+    const y = 94 - (row[method].seconds / max) * 70;
+    return `${x},${y}`;
+  }).join(" ");
+  const bars = rows.map((row, index) => {
+    const x = 24 + index * (252 / rows.length);
+    const width = Math.max(4, 15 / Math.max(1, rows.length / 5));
+    const th = (row.thistle.seconds / max) * 64;
+    const cf = (row.cfop.seconds / max) * 64;
+    return `<rect class="chart-bar chart-bar-thistle" x="${x}" y="${94-th}" width="${width}" height="${th}" rx="3" style="--bar-delay:${index*55}ms"/><rect class="chart-bar chart-bar-cfop" x="${x+width+3}" y="${94-cf}" width="${width}" height="${cf}" rx="3" style="--bar-delay:${index*55+35}ms"/>`;
+  }).join("");
+  target.innerHTML = `
+    <div class="motion-chart-card">
+      <div class="motion-chart-heading"><div><span class="benchmark-eyebrow">TENDENCIA DE RENDIMIENTO</span><strong>Tiempo por prueba</strong></div><div class="motion-chart-legend"><span class="legend-thistle">Thistle</span><span class="legend-cfop">CFOP</span></div></div>
+      <svg class="motion-chart" viewBox="0 0 300 112" role="img" aria-label="Comparación del tiempo de resolución por prueba">
+        <path class="chart-gridline" d="M20 24H286 M20 58H286 M20 94H286"/>
+        ${bars}
+        <polyline class="chart-line chart-line-thistle" points="${points("thistle")}"/>
+        <polyline class="chart-line chart-line-cfop" points="${points("cfop")}"/>
+      </svg>
+      <div class="motion-chart-axis"><span>PRIMERA PRUEBA</span><span>${rows.length} / 10</span><span>ÚLTIMA</span></div>
+    </div>`;
+  staggerIn(target, ".motion-chart-card", 0);
+}
 
 async function fetchStateForMoves(moves) {
   const query = encodeURIComponent(moves.join(","));
@@ -296,6 +433,7 @@ async function animateComparison(method, result, finished) {
         userMoves.concat(moves)
       );
 
+      await animateCubeTurn(view.cube3d, move);
       renderFacelets(view.cube2d, state.facelets);
       renderFacelets(view.cube3d, state.facelets);
 
@@ -341,6 +479,15 @@ function renderComparisonSummary(results, finished) {
         `).join("")}
       </tbody>
     </table>
+    <div class="compare-chart motion-chart-card">
+      <div class="motion-chart-heading"><div><span class="benchmark-eyebrow">COMPARACIÓN DIRECTA</span><strong>Movimientos y tiempo</strong></div><div class="motion-chart-legend"><span class="legend-thistle">Thistle</span><span class="legend-cfop">CFOP</span></div></div>
+      ${["thistle", "cfop"].map((method) => {
+        const item = results[method];
+        const maxMoves = Math.max(results.thistle.total_moves, results.cfop.total_moves, 1);
+        const maxTime = Math.max(results.thistle.seconds, results.cfop.seconds, 0.0001);
+        return `<div class="compare-chart-row"><span>${method === "thistle" ? "Thistlethwaite" : "CFOP"}</span><div class="compare-chart-track"><i class="${method}" style="--target-width:${(item.total_moves/maxMoves)*100}%"></i></div><strong>${item.total_moves} mov.</strong><small>${Number(item.seconds).toFixed(4)} s</small></div>`;
+      }).join("")}
+    </div>
     <p>
       Terminó primero:
       ${finished[0] === "thistle" ? "Thistlethwaite" : "CFOP"}
@@ -386,6 +533,7 @@ async function compare() {
     setBusy(false);
   }
 }
+
 function createBenchmarkView() {
   benchmarkTable.innerHTML = `
     <section class="benchmark-dashboard">
@@ -564,6 +712,14 @@ function benchmarkRenderMetrics(rows) {
     `Menos movimientos: ${fewestMoves.method === "thistle" ? "Thistlethwaite" : "CFOP"} · ` +
     `Menos nodos: ${fewestNodes.method === "thistle" ? "Thistlethwaite" : "CFOP"}`;
   grid.appendChild(note);
+  const chartHost = document.createElement("div");
+  chartHost.className = "benchmark-chart-host";
+  grid.appendChild(chartHost);
+  renderMetricChart(rows, chartHost);
+  grid.querySelectorAll(".benchmark-metric-card strong").forEach((value) => {
+    const raw = Number(value.textContent.replace(/[^0-9.]/g, ""));
+    if (Number.isFinite(raw)) animateValue(value, raw, value.textContent.includes(" s") ? " s" : "", value.textContent.includes(" s") ? 4 : 2);
+  });
 }
 
 function benchmarkRenderHistory(rows) {
@@ -613,6 +769,9 @@ async function animateBenchmarkMethod(method, result, scrambleMoves, view) {
       executed += 1;
 
       const state = await fetchStateForMoves(scrambleMoves.concat(allMoves));
+      view.cube.classList.remove("net-turning");
+      void view.cube.offsetWidth;
+      view.cube.classList.add("net-turning");
       renderFacelets(view.cube, state.facelets);
 
       view.count.textContent = String(executed);
@@ -712,22 +871,28 @@ async function benchmark() {
     setBusy(false);
   }
 }
+
 function renderFacelets(container, facelets) {
+  if (!container) return;
   const stickers = container.querySelectorAll(".sticker");
 
   stickers.forEach((sticker) => {
-    const color = facelets[Number(sticker.dataset.index)];
+    const index = Number(sticker.dataset.index);
+    const color = facelets[index];
+    sticker.className = `sticker ${faceNames[color] || ""}`;
 
-    sticker.setAttribute(
-      "class",
-      `sticker ${faceNames[color] || ""}`
-    );
+    if (container.id === "validationCube3d" || container.id === "validationCube") {
+      const colorNames = { U: "blanco", R: "rojo", F: "verde", D: "amarillo", L: "naranja", B: "azul" };
+      const isCenter = index % 9 === 4;
+      sticker.setAttribute("aria-label", `${isCenter ? "Centro fijo" : "Pegatina editable"}: ${colorNames[color] || "sin color"}`);
+    }
   });
 }
 
 function setValidationFacelets(facelets) {
   validationFacelets = Array.from(facelets);
   renderFacelets(validationCube, validationFacelets);
+  renderFacelets(validationCube3dElement, validationFacelets);
 }
 
 function solvedFacelets() {
@@ -913,26 +1078,79 @@ function showPanel(name) {
     benchmark: benchmarkPanel
   };
 
-  const buttons = {
-    solve: solveButton,
-    compare: compareButton,
+  const navigation = {
+    solve: navSolveButton,
+    compare: navCompareButton,
     validate: validateTabButton,
-    benchmark: benchmarkButton
+    benchmark: navBenchmarkButton
+  };
+
+  const pageCopy = {
+    solve: {
+      title: "Resolver cubo",
+      description: "Explora el estado, ejecuta una resolución y observa cada etapa del algoritmo."
+    },
+    compare: {
+      title: "Comparar métodos",
+      description: "Pon a prueba Thistlethwaite y CFOP sobre el mismo estado y observa sus soluciones en paralelo."
+    },
+    validate: {
+      title: "Validar estado",
+      description: "Inspecciona las piezas y comprueba si la configuración representa un cubo físicamente posible."
+    },
+    benchmark: {
+      title: "Benchmark",
+      description: "Analiza movimientos, nodos y tiempos con un conjunto de mezclas compartidas."
+    }
   };
 
   Object.entries(panels).forEach(([key, panel]) => {
+    if (!panel) return;
     const isActive = key === name;
-
     panel.hidden = !isActive;
     panel.setAttribute("aria-hidden", String(!isActive));
   });
 
-  Object.entries(buttons).forEach(([key, button]) => {
+  Object.entries(navigation).forEach(([key, button]) => {
+    if (!button) return;
     const isActive = key === name;
-
     button.classList.toggle("active", isActive);
+    button.setAttribute("aria-current", isActive ? "page" : "false");
     button.setAttribute("aria-pressed", String(isActive));
   });
+
+  const copy = pageCopy[name];
+  const title = document.querySelector("#pageTitle");
+  const description = document.querySelector("#pageDescription");
+  const breadcrumb = document.querySelector("#activeBreadcrumb");
+  if (copy && title) title.textContent = copy.title;
+  if (copy && description) description.textContent = copy.description;
+  if (copy && breadcrumb) breadcrumb.textContent = copy.title;
+
+  const activePanel = panels[name];
+  const isSolveWorkspace = name === "solve";
+
+  // Resolver conserva el layout de cubo + operaciones. Las demás secciones
+  // usan todo el ancho disponible y no heredan el cubo principal.
+  if (leftColumn) leftColumn.hidden = !isSolveWorkspace;
+  if (workspaceGrid) workspaceGrid.classList.toggle("is-section-wide", !isSolveWorkspace);
+  if (workspaceNoteCard) workspaceNoteCard.hidden = !isSolveWorkspace;
+
+  const heading = document.querySelector(".page-heading");
+  [heading, document.querySelector(".controls-card")]
+    .filter(Boolean)
+    .forEach((element, index) => {
+      element.classList.remove("motion-page-in");
+      element.style.setProperty("--motion-delay", `${index * 95}ms`);
+      void element.offsetWidth;
+      element.classList.add("motion-page-in");
+    });
+  if (isSolveWorkspace && leftColumn) {
+    staggerIn(leftColumn, ".cube-card, .controls-card, .cube-3d-block, .cube-2d-block, .action-grid, .settings-row, .moves-panel", 68);
+  }
+  if (activePanel) {
+    staggerIn(activePanel, ".panel-header, .solve-overview, .phase-section-header, .phase-list, .phase-metrics-chart, .methods-overview, .compare-intro, .compare-launch-card, .method-heading, .comparison-visuals, .comparison-stage, .comparison-count, .compare-results-header, .compare-summary, .validation-layout, .validation-cube-wrap, .validation-net-wrap, .validation-tool-group, .validation-rules, .benchmark-launch-card, .benchmark-status, .benchmark-dashboard > *, .benchmark-method, .benchmark-results", 62);
+  }
 }
 
 async function updateState(manageBusy = true) {
@@ -968,27 +1186,32 @@ async function updateState(manageBusy = true) {
 
 async function scramble() {
   if (requestInProgress) return;
-
   userMoves = [];
   solutionMoves = [];
-
   clearSolution();
   setBusy(true);
-
+  updateStatus("Mezclando cubo...");
   try {
     const response = await fetch("/api/scramble?n=25");
-
-    if (!response.ok) {
-      throw new Error("No se pudo generar la mezcla.");
-    }
-
     const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "No se pudo generar la mezcla.");
 
-    userMoves = result.moves;
-
-    clearSolution();
-
-    await updateState(false);
+    const scrambleMoves = result.moves || [];
+    userMoves = [];
+    renderMoves();
+    for (let index = 0; index < scrambleMoves.length; index += 1) {
+      const move = scrambleMoves[index];
+      const nextMoves = scrambleMoves.slice(0, index + 1);
+      const state = await fetchStateForMoves(nextMoves);
+      await animateCubeTurn(mainCube3dElement, move);
+      userMoves = nextMoves;
+      renderFacelets(cubeElement, state.facelets);
+      renderFacelets(mainCube3dElement, state.facelets);
+      renderMoves();
+      setStatus(state.legal);
+      await new Promise((resolve) => setTimeout(resolve, Math.max(25, Number(intervalControl.value) * 0.28)));
+    }
+    updateStatus(`Mezcla completada · ${scrambleMoves.length} movimientos`);
   } catch (error) {
     updateStatus(error.message, "status error");
   } finally {
@@ -998,13 +1221,22 @@ async function scramble() {
 
 async function reset() {
   if (requestInProgress) return;
-
-  userMoves = [];
-  solutionMoves = [];
-
-  clearSolution();
-
-  await updateState();
+  setBusy(true);
+  try {
+    const reverseMoves = userMoves.slice().reverse().map((move) => {
+      if (move.endsWith("2")) return move;
+      return move.endsWith("i") ? move[0] : `${move[0]}i`;
+    });
+    for (const move of reverseMoves) {
+      await animateCubeTurn(mainCube3dElement, move, Math.min(210, Number(intervalControl.value) || 180));
+    }
+    userMoves = [];
+    solutionMoves = [];
+    clearSolution();
+    await updateState(false);
+  } finally {
+    setBusy(false);
+  }
 }
 
 function renderSolution(phases) {
@@ -1030,6 +1262,23 @@ function renderSolution(phases) {
 
     phaseList.appendChild(item);
   });
+  staggerIn(phaseList, ".phase", 75);
+
+  const previousChart = document.querySelector("#phaseMetricsChart");
+  if (previousChart) previousChart.remove();
+  const chart = document.createElement("section");
+  chart.id = "phaseMetricsChart";
+  chart.className = "phase-metrics-chart motion-chart-card";
+  const maxTime = Math.max(0.0001, ...phases.map((phase) => Number(phase.seconds) || 0));
+  chart.innerHTML = `
+    <div class="motion-chart-heading"><div><span class="benchmark-eyebrow">PERFIL DEL ALGORITMO</span><strong>Tiempo por fase</strong></div><span class="phase-counter">${phases.length} FASES</span></div>
+    <div class="phase-time-bars">${phases.map((phase, index) => {
+      const value = Number(phase.seconds) || 0;
+      const width = Math.max(1.5, value / maxTime * 100);
+      return `<div class="phase-time-row"><span>${String(index + 1).padStart(2, "0")} · ${phase.stage || phase.name}</span><i><b style="--phase-width:${width}%;--bar-delay:${index * 85}ms"></b></i><strong>${value.toFixed(4)} s</strong></div>`;
+    }).join("")}</div>`;
+  phaseList.insertAdjacentElement("afterend", chart);
+  staggerIn(chart, ".phase-time-row", 75);
 }
 
 function setActivePhase(index) {
@@ -1082,12 +1331,13 @@ async function solve() {
 
       for (const move of phase.moves) {
         solutionMoves.push(move);
-
-        if (!await updateState(false)) {
-          throw new Error("No se pudo actualizar el estado del cubo.");
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 400));
+        const state = await fetchStateForMoves(combinedMoves());
+        await animateCubeTurn(mainCube3dElement, move);
+        renderFacelets(cubeElement, state.facelets);
+        renderFacelets(mainCube3dElement, state.facelets);
+        setStatus(state.legal);
+        renderMoves();
+        await new Promise((resolve) => setTimeout(resolve, Math.max(25, Number(intervalControl.value) * 0.28 || 50)));
       }
 
       phaseIndex += 1;
@@ -1110,6 +1360,10 @@ async function solve() {
 }
 
 function handleKey(event) {
+  if (!navSolveButton.classList.contains("active")) return;
+  const target = event.target;
+  if (target && target.closest("input, textarea, select, button, a, [contenteditable='true']")) return;
+
   const key = event.key.toLowerCase();
 
   if (key === "2") {
@@ -1150,28 +1404,77 @@ Object.values(comparison).forEach((view) => {
 });
 
 createCube(validationCube);
+create3DCube(validationCube3dElement);
 
 Object.keys(cameraState).forEach(applyCubeCamera);
 
-enableMainCubeDrag(mainCubeScene);
+enableCubeDrag(mainCubeScene, "main");
+enableCubeDrag(validationCubeScene, "validation");
 
-// Edición manual de los stickers del cubo de validación.
-validationCube.querySelectorAll(".sticker").forEach((sticker) => {
-  const index = Number(sticker.dataset.index);
-  const center = index % 9 === 4;
+const validationColorNames = {
+  U: "blanco", R: "rojo", F: "verde", D: "amarillo", L: "naranja", B: "azul"
+};
 
-  if (!center) {
-    sticker.addEventListener("click", () => {
-      const colors = ["U", "R", "F", "D", "L", "B"];
-      const current = colors.indexOf(validationFacelets[index]);
-
-      validationFacelets[index] = colors[
-        (current + 1) % colors.length
-      ];
-
-      renderFacelets(validationCube, validationFacelets);
-    });
+function selectValidationColor(color) {
+  if (!faceNames[color]) return;
+  selectedValidationColor = color;
+  document.querySelectorAll(".validation-swatch").forEach((button) => {
+    const selected = button.dataset.faceletColor === color;
+    button.classList.toggle("is-selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+  if (validationColorLabel) {
+    validationColorLabel.textContent = `Color seleccionado: ${validationColorNames[color]}`;
   }
+}
+
+function paintValidationSticker(sticker) {
+  if (!sticker || !sticker.classList.contains("sticker")) return;
+  const index = Number(sticker.dataset.index);
+  if (!Number.isInteger(index) || index % 9 === 4) return;
+
+  validationFacelets[index] = selectedValidationColor;
+  renderFacelets(validationCube, validationFacelets);
+  renderFacelets(validationCube3dElement, validationFacelets);
+  validationResult.textContent = "";
+  validationResult.className = "validation-result";
+}
+
+// La red 2D y el cubo 3D comparten el mismo arreglo de facelets.
+validationCube.addEventListener("click", (event) => {
+  const sticker = event.target.closest(".sticker");
+  if (sticker) paintValidationSticker(sticker);
+});
+
+validationCube.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const sticker = event.target.closest(".sticker[role='button']");
+  if (!sticker) return;
+  event.preventDefault();
+  paintValidationSticker(sticker);
+});
+
+validationCube3dElement.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const sticker = event.target.closest(".sticker[role='button']");
+  if (!sticker) return;
+  event.preventDefault();
+  paintValidationSticker(sticker);
+});
+
+document.querySelectorAll(".validation-swatch").forEach((button) => {
+  button.addEventListener("click", () => selectValidationColor(button.dataset.faceletColor));
+});
+selectValidationColor("U");
+
+// Feedback corto y consistente en todos los botones de la interfaz.
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("button");
+  if (!button || button.disabled || reducedMotion.matches) return;
+  button.classList.remove("button-feedback");
+  void button.offsetWidth;
+  button.classList.add("button-feedback");
+  button.addEventListener("animationend", () => button.classList.remove("button-feedback"), { once: true });
 });
 
 // Eventos de los controles principales.
@@ -1181,6 +1484,9 @@ solveButton.addEventListener("click", solve);
 compareButton.addEventListener("click", compare);
 benchmarkButton.addEventListener("click", benchmark);
 
+navSolveButton.addEventListener("click", () => showPanel("solve"));
+navCompareButton.addEventListener("click", () => showPanel("compare"));
+navBenchmarkButton.addEventListener("click", () => showPanel("benchmark"));
 validateTabButton.addEventListener("click", () => showPanel("validate"));
 
 loadCurrentButton.addEventListener("click", loadCurrentCube);
